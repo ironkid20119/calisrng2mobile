@@ -1,0 +1,2060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>calis RNG game</title>
+    
+    <meta name="theme-color" content="#2d0051">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <style>
+        /* CSS is unchanged, but included for completeness */
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #4a148c;
+            color: #ffffff;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #ffffff;
+        }
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+        #terminal {
+            background-color: #2d0051;
+            border: 2px solid #ff69b4;
+            border-radius: 5px;
+            padding: 20px;
+            min-height: 400px;
+            max-height: 500px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        .output-line {
+            margin: 5px 0;
+        }
+        .command {
+            color: #ff69b4;
+        }
+        .welcome-message {
+            color: #ff69b4;
+            font-weight: bold;
+        }
+        .stats {
+            background-color: #2d0051;
+            border: 2px solid #ff69b4;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .stat-item {
+            margin: 8px 0;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #808080;
+            color: #ffffff;
+            border: 2px solid #ff69b4;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background-color: #a0a0a0;
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        button:disabled {
+            background-color: #555;
+            border-color: #888;
+            color: #aaa;
+            cursor: not-allowed;
+        }
+        button.active {
+            background-color: #ff69b4;
+            color: #000;
+        }
+        #inventory, #index {
+            background-color: #2d0051;
+            border: 2px solid #ff69b4;
+            border-radius: 5px;
+            padding: 20px;
+            min-height: 400px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .inventory-item {
+            background-color: #4a148c;
+            border: 1px solid #ff69b4;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .inventory-item:hover {
+            background-color: #5a1a9c;
+            transform: translateX(5px);
+        }
+        .section-header {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #ff69b4;
+            font-weight: bold;
+        }
+        .clickable-roll {
+            cursor: pointer;
+            display: inline-block;
+            transition: all 0.2s;
+        }
+        .clickable-roll:hover {
+            transform: scale(1.05);
+            text-shadow: 0 0 10px currentColor;
+        }
+        .index-item {
+            background-color: #4a148c;
+            border: 1px solid #ff69b4;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 3px;
+        }
+        .index-item.discovered {
+            border-color: #00ff00;
+        }
+        .index-item.locked {
+            opacity: 0.5;
+            border-color: #666;
+        }
+        
+        .autoroll-settings {
+            background-color: #2d0051;
+            border: 2px solid #ff69b4;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .autoroll-setting-item {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .autoroll-setting-item label {
+            flex-shrink: 0;
+        }
+        
+        .autoroll-setting-item input[type="number"] {
+            background-color: #4a148c;
+            color: #ffffff;
+            border: 1px solid #ff69b4;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            width: 150px;
+        }
+        
+        .autoroll-setting-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        /* Rank colors */
+        .rank-1-1000 { color: #ffffff; }
+        .rank-1000-10000 { color: #ffff00; }
+        .rank-10000-100000 { color: #00ffff; }
+        .rank-100000-1000000 { color: #0000cd; }
+        .rank-1000000-100000000 { color: #ff0000; }
+        .rank-100000000-1000000000 { color: #8b0000; }
+        .rank-1000000000-10000000000 { color: #00ff00; }
+        .rank-10000000000-100000000000 { color: #ffc0cb; } 
+        .rank-100000000000-1000000000000 { color: #a9a9a9; } 
+        .rank-1000000000000-100000000000000 { color: #ff69b4; }
+        .rank-improbable { color: #008080; }
+        .variant-roll {} 
+        
+        .rank-rainbow {
+            background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: rainbow-shift 3s linear infinite;
+            background-size: 200% 100%;
+        }
+
+        .secret-nonavacious {
+            filter: drop-shadow(0 0 5px #00BFFF); 
+        }
+        
+        @keyframes rainbow-shift {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+
+        /* --- CUTSCENE STYLES --- */
+        #cutscene-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease-in-out; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .cutscene-active #cutscene-overlay {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .cutscene-flash #cutscene-overlay {
+            background-color: #ffffff;
+        }
+
+        #star-element {
+            position: absolute; 
+            top: 50%; 
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            opacity: 0;
+            transition: opacity 0.5s ease-in;
+            filter: drop-shadow(0 0 15px currentColor);
+            background-color: currentColor; 
+        }
+        
+        .star-4 {
+            clip-path: polygon(50% 0%, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0% 50%, 39% 39%);
+        }
+        
+        .star-6 {
+            clip-path: polygon(50% 0%, 65% 20%, 100% 30%, 80% 50%, 100% 70%, 65% 80%, 50% 100%, 35% 80%, 0% 70%, 20% 50%, 0% 30%, 35% 20%);
+        }
+        
+        .star-8 {
+            clip-path: polygon(50% 0%, 58% 30%, 100% 30%, 66% 50%, 100% 70%, 58% 70%, 50% 100%, 42% 70%, 0% 70%, 34% 50%, 0% 30%, 42% 30%);
+        }
+        
+        .star-12 {
+            clip-path: polygon(50% 0%, 55% 15%, 70% 15%, 75% 0%, 80% 15%, 95% 15%, 100% 30%, 95% 45%, 100% 70%, 95% 85%, 100% 85%, 75% 100%, 70% 85%, 55% 85%, 50% 100%, 45% 85%, 30% 85%, 25% 100%, 20% 85%, 5% 85%, 0% 70%, 5% 45%, 0% 30%, 5% 15%, 20% 15%, 25% 0%, 30% 15%, 45% 15%);
+        }
+
+        /* --- END CUTSCENE STYLES --- */
+
+        /* --- NEW: SHAPES GUI STYLES --- */
+        #shapes-gui {
+            background-color: #2d0051;
+            border: 2px solid #00FF00; /* Green border for new UI */
+            padding: 20px;
+            border-radius: 5px;
+            /* REMOVED: margin-top: 20px; to allow it to sit flush with its new parent grid cell */
+            display: none; /* Hidden by default */
+        }
+
+        /* NEW: Container for clickable shapes */
+        .shapes-field {
+            background-color: #1a0033;
+            border: 1px dashed #00FF00;
+            min-height: 200px;
+            max-height: 300px;
+            overflow: hidden; 
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        /* NEW: Styles for the individual clickable polygon */
+        .clickable-shape {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: #000;
+            text-shadow: 0 0 3px currentColor;
+            border-radius: 2px;
+            animation: float 5s ease-in-out infinite alternate; 
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            100% { transform: translateY(-5px) rotate(5deg); }
+        }
+
+        /* Shape-specific clip-paths for visual polygons */
+        .shape-Triangle { clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }
+        .shape-Square { clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%); }
+        .shape-Pentagon { clip-path: polygon(50% 0%, 100% 38%, 81% 100%, 19% 100%, 0% 38%); }
+        .shape-Hexagon { clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
+        .shape-7-Sided-Polygon { clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%); }
+        .shape-Octagon { clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%); }
+        .shape-Circle { border-radius: 50%; }
+
+        /* Retained for the smaller log */
+        .shape-spawn-output {
+            background-color: #1a0033;
+            border: 1px solid #00FF00;
+            padding: 10px;
+            min-height: 50px;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+        
+        .shape-spawn-line {
+            margin: 5px 0;
+            color: #00FF00; /* Bright green text */
+        }
+        
+        .shapes-upgrades {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        /* --- END NEW STYLES --- */
+
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="cutscene-inactive">
+    <h1>calis RNG game</h1>
+    
+    <div class="stats">
+        <div class="stat-item">Currency: <span id="currency">0.00</span></div>
+        <div class="stat-item">Geometrix: <span id="geometrix">0.00</span></div>
+        <div class="stat-item">Total Upgrades: <span id="upgrades">0</span></div>
+        <div class="stat-item">Luck: +<span id="luck">0.000</span></div>
+        <div class="stat-item">Luck Multiplier: <span id="luckMulti">1.00</span>x</div>
+        <div class="stat-item">Secret Luck: <span id="secretLuck">1.00</span>x</div>
+        <div class="stat-item">Variant Chance: <span id="variantChance">1.00</span>x</div>
+        <div class="stat-item">Next Upgrade Cost: <span id="upgradeCost">50.00</span></div>
+        <div class="stat-item">Bulk Roll (Lvl <span id="bulkRollLevel">0</span>): <span id="bulkRollAmount">1</span> roll/click</div>
+        <div class="stat-item">Next Bulk Roll Cost: <span id="bulkRollCost">500,000.00</span></div>
+        <div class="stat-item">Inventory: <span id="inventoryCount">0</span>/<span id="inventoryMax">10</span></div>
+        <div class="stat-item">Rarest Roll: <span id="rarest">None yet</span></div>
+        <div class="stat-item">Ranks Discovered: <span id="ranksDiscovered">0</span>/<span id="totalRanks">42</span></div>
+    </div>
+
+    <div class="autoroll-settings">
+        <div class="section-header">Auto Roll Settings</div>
+        <div class="autoroll-setting-item">
+            <label>Stop on rank ≥:</label>
+            <input type="number" id="autoStopThreshold" value="0" step="0.000001" placeholder="Enter minimum value">
+        </div>
+        <div class="autoroll-setting-item">
+            <input type="checkbox" id="secretConfig">
+            <label for="secretConfig">Secret Config (stop on secret ranks)</label>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="roll()">Roll (r)</button>
+        <button id="autoRollBtn" onclick="toggleAutoRoll()">Auto Roll</button>
+        <button onclick="buyUpgrade()">Buy Upgrade</button>
+        <button id="buyBulkRollBtn" onclick="buyBulkRoll()">Buy Bulk Roll</button>
+        <button onclick="showRarest()">Show Rarest</button>
+        <button onclick="clearTerminal()">Clear Terminal</button>
+        <button onclick="saveGame()">Save Game</button>
+        <button id="cutsceneToggleBtn" onclick="toggleCutscenes()">Cutscenes: ON</button>
+    </div>
+
+    
+    <div class="main-container">
+        <div>
+            <div id="terminal"></div>
+        </div>
+        <div>
+            <div id="inventory">
+                <div class="section-header">Inventory</div>
+                <div class="controls" style="grid-template-columns: 1fr 1fr; margin-bottom: 10px;">
+                    <button onclick="sortInventory('leastRarest')">Least Rarest</button>
+                    <button onclick="sortInventory('mostRarest')">Most Rarest</button>
+                </div>
+                <div id="inventoryContent">Empty</div>
+            </div>
+        </div>
+        <div>
+            <div id="index">
+                <div class="section-header">Index (Ranks Discovered)</div>
+                <div id="indexContent">Roll to discover ranks!</div>
+            </div>
+            
+            <div class="controls" id="shapes-unlock-controls" style="margin-top: 20px;">
+                <button id="unlockShapesBtn" onclick="unlockShapes()">Unlock Shapes GUI (5,000,000.00 Currency)</button>
+            </div>
+            
+            <div id="shapes-gui">
+                <div class="section-header" style="color: #00FF00;">Shapes GUI</div>
+                
+                <div id="shapes-field" class="shapes-field"></div>
+
+                <div class="stat-item">Current Shape Luck: +<span id="shapeLuckBonus">0.0</span>x</div>
+                <div class="stat-item">Shapes/Spawn: <span id="bulkShapeAmount">1</span> (Lvl <span id="bulkShapeLevel">0</span>)</div>
+                <div class="stat-item">Spawn Cooldown: <span id="shapeCooldown">2.0000</span>s</div>
+                
+                <div class="shape-spawn-output" id="shape-spawn-output" style="height: 50px;">Waiting for first spawn...</div>
+
+                <div class="shapes-upgrades">
+                    <button id="buyShapeLuckBtn" onclick="buyShapeLuckUpgrade()">Shape Luck (+0.1x) - Cost: <span id="shapeLuckCost">5.00</span> GMX</button>
+                    <button id="buyLuckMultiBtn" onclick="buyLuckMultiUpgrade()">Luck Multiplier (x2.00) - Cost: <span id="luckMultiCost">100.00</span> GMX</button>
+                    <button id="buyBulkShapeBtn" onclick="buyBulkShapeUpgrade()">Bulk/Cooldown Lvl <span id="bulkShapeLevelBtn">1</span> - Cost: <span id="bulkShapeCost">50.00</span> GMX</button>
+                </div>
+            </div>
+            </div>
+    </div>
+
+    <div id="cutscene-overlay">
+        <div id="star-element" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
+        </div>
+    <script>
+        // --- CONSTANTS ---
+        const POWER_EXPONENT = -2.5;
+        const AUTO_ROLL_DELAY_MS = 12.5;
+        // NERF: Upgrade cost multiplier changed from 1.25 to 1.15
+        const UPGRADE_COST_MULTIPLIER = 1.15;
+        // MODIFIED: Luck scaling changed from 1.777 to 2.5
+        const LUCK_PER_UPGRADE = 2.5;
+        const INVENTORY_PER_UPGRADE = 5;
+        const VARIANT_CHANCE_PER_UPGRADE = 0.05;
+        const MAX_VARIANT_CHANCE_MULTIPLIER = 12.5;
+        const SECRET_LUCK_PER_UPGRADE = 0.25;
+        const MAX_SECRET_LUCK = 5;
+        const BULK_ROLL_COST_MULTIPLIER = 1.75;
+        const MAX_BULK_ROLL_LEVEL = 4;
+        const MAX_VARIANTS_PER_ROLL = 5; 
+        
+        // CUTSCENE CONSTANTS
+        const CUTSCENE_DURATION_MS = 7000;
+        const STAR_FADE_IN_MS = 2000;
+        const SPIN_ACCEL_MS = 5000;
+        const SIZE_UPDATE_INTERVAL_MS = 10; 
+        const SIZE_MULTIPLIER_PER_UPDATE = 1.02;
+        const WHITE_FLASH_DURATION_MS = 1000; 
+
+        // --- NEW EVENT CONSTANTS ---
+        // CHANGED: Event check interval from 2500ms to 500ms
+        const EVENT_CHECK_INTERVAL_MS = 500; 
+
+        const EVENTS = [
+            { 
+                name: "Error", 
+                chance: 1/40.4, 
+                duration: 40000, // 40 seconds
+                description: "makes nil, Title Label Missing and unknown's rarity be easier by x4",
+                targets: ["nil", "Title Label Missing", "?!? unknown ?!?"],
+                multiplier: 4 
+            },
+            { 
+                name: "Lol", 
+                chance: 1/69, 
+                duration: 20000, // 20 seconds
+                description: "makes every meme related secret easier by 6.94x and boosts future event chances",
+                targets: ["r", "fish", "cheese", "In im table ?!?!?"],
+                multiplier: 6.94,
+                eventChanceBoost: 69 
+            },
+            { 
+                name: "UNDEFINED", 
+                chance: 1/300, 
+                duration: 30000, // 30 seconds
+                description: "makes ranks 'unknown,' 'title label missing' and 'absolute zero' be x5 times easier",
+                targets: ["?!? unknown ?!?", "Title Label Missing", ":[{(absolute zero)}]:"],
+                multiplier: 5
+            },
+            // NEW: Modified event
+            { 
+                name: "Modified", 
+                chance: 1/200, 
+                duration: 15000, // 15 seconds
+                description: "makes every variant x5 times easier",
+                targets: [], // Not target-based
+                multiplier: 5
+            },
+            // NEW: Self Insert event
+            { 
+                name: "Self Insert", 
+                chance: 1/777, 
+                duration: 77700, // 77.7 seconds
+                description: "makes cali^2 easier by x777,777.777",
+                targets: ["cali^2"],
+                multiplier: 777777.777
+            }
+        ];
+
+        // UPDATED VARIANTS ARRAY
+        const VARIANTS = [
+            // MODIFIED: Shiny chance from 1/25 to 1/75 (multiplier remains 25)
+            { name: "Shiny", chance: 1/75, multiplier: 25, color: "#FFD700" },
+            { name: "Gilded", chance: 1/125, multiplier: 125, color: "#FFA500" },
+            { name: "Spectral", chance: 1/625, multiplier: 625, color: "#9400D3" },
+            { name: "Extraordinary", chance: 1/1250, multiplier: 1250, color: "#FF1493" },
+            { name: "Myriad", chance: 1/2500, multiplier: 2500, color: "#00FFFF" },
+            { name: "Charred", chance: 1/4000, multiplier: 4000, color: "#FF4500" },
+            { name: "Expert", chance: 1/7500, multiplier: 7500, color: "#00BFFF" },
+            // NEW: Wind variant
+            { name: "Wind", chance: 1/12500, multiplier: 12500, color: "#ADD8E6" }, 
+            // NEW: Mega variant
+            { name: "Mega", chance: 1/25000, multiplier: 25000, color: "#FF00FF" }, 
+            // NEW: Small variant
+            { name: "Small", chance: 1/35000, multiplier: 35000, color: "#BEBEBE" }, 
+            // NEW: Monument variant
+            { name: "Monument", chance: 1/55555, multiplier: 55555, color: "#8B4513" }, 
+            { name: "ETERNAL DAWN", chance: 1/77777, multiplier: 77777, color: "#FFFFFF" },
+            { name: ">Finale<", chance: 1/100000, multiplier: 100000, color: "#D2691E" },
+            // NEW: Atomic variant
+            { name: "Atomic", chance: 1/494500, multiplier: 494500, color: "#32CD32" }
+        ];
+
+        // NEW RANK TIER: Improbable
+        const RANK_TIERS = [
+            { min: 1, max: 5, name: "Common" },
+            { min: 5, max: 25, name: "Natural" },
+            { min: 25, max: 50, name: "Uncommon" },
+            { min: 50, max: 100, name: "Normal" },
+            { min: 100, max: 500, name: "Divine" },
+            { min: 500, max: 1000, name: "Grandiose" },
+            { min: 1000, max: 2500, name: "Decent" },
+            { min: 2500, max: 7500, name: "Unreal" },
+            { min: 7500, max: 25000, name: "Cosmic" },
+            { min: 25000, max: 100000, name: "Eternal" },
+            { min: 100000, max: 1e6, name: "Iridescent" },
+            { min: 1e6, max: 1e7, name: "Heavenly" },
+            { min: 1e7, max: 5e7, name: "Unattainable" },
+            { min: 5e7, max: 1e9, name: "Gigantic" },
+            { min: 1e9, max: 1e10, name: "Infinitude" },
+            { min: 1e10, max: 1e11, name: "Unseeable" }, 
+            { min: 1e11, max: 1e12, name: "Impassive" }, 
+            { min: 1e12, max: 1e15, name: "Unrollable" },
+            { min: 1e15, max: 1e18, name: "Imaginary" },
+            { min: 1e18, max: 1e21, name: "Impossible" },
+            { min: 1e21, max: 1e24, name: "Astronomical" },
+            { min: 1e24, max: 1e30, name: "Colossal" }, 
+            { min: 1e30, max: Infinity, name: "Improbable" } 
+        ];
+
+        // NEW SECRET RANKS ADDED
+        const SECRET_RANKS_CHANCES = [
+            { name: "nil", chance: 1/10000, rarity: 10000 }, 
+            { name: "Title Label Missing", chance: 1/4040.404, rarity: 4040.404 },
+            { name: "?!? unknown ?!?", chance: 1/6666.666, rarity: 6666.666 },
+            { name: "r", chance: 1/6942, rarity: 6942 },
+            { name: "In im table ?!?!?", chance: 1/7500, rarity: 7500 },
+            { name: "Interminable", chance: 1/7777, rarity: 7777 },
+            { name: "fish", chance: 1/7979, rarity: 7979 },
+            { name: "cheese", chance: 1/10000, rarity: 10000 },
+            { name: "100", chance: 1/10000, rarity: 10000 },
+            { name: "Minimal", chance: 1/15000, rarity: 15000 },
+            { name: "Seize", chance: 1/97525, rarity: 97525 }, 
+            // NEW: Florescent rank
+            { name: "Florescent", chance: 1/264839, rarity: 264839 },
+            // NEW: π rank
+            { name: "π", chance: 1/314159, rarity: 314159 },
+            { name: "~Nonavacious~", chance: 1/575630, rarity: 575630 }, 
+            { name: "Insanity", chance: 1/666666, rarity: 666666 }, 
+            { name: "Grand", chance: 1/1e6, rarity: 1e6 },
+            { name: ":[{(absolute zero)}]:", chance: 1/1e6, rarity: 1e6 },
+            { name: "cali^2", chance: 1/1e12, rarity: 1e12 }
+        ];
+
+        // FIX: Sort by chance ascending (rarest first) 
+        SECRET_RANKS_CHANCES.sort((a, b) => a.chance - b.chance); 
+
+        const TOTAL_RANKS = RANK_TIERS.length + SECRET_RANKS_CHANCES.length; // 24 + 18 = 42
+
+        // --- NEW: SHAPES CONSTANTS ---
+        const UNLOCK_SHAPES_COST = 5000000;
+        const SHAPE_SPAWN_INTERVAL_MS = 2000;
+        const MAX_SHAPE_LUCK_LEVEL = 5;
+        const SHAPE_LUCK_BONUS = 0.1;
+        const SHAPE_LUCK_COST_MULTIPLIER = 1.75;
+        const LUCK_MULTI_COST_MULTIPLIER = 1000;
+        const BULK_SHAPE_COST_MULTIPLIER = 5;
+        const MAX_BULK_SHAPE_LEVEL = 4;
+        const SHAPE_COOLDOWN_DECREASE_MS = 333.3333; // 0.3333 seconds
+        // NEW: Shape Despawn Timer
+        const SHAPE_DESPAWN_TIME_MS = 5000; // 5 seconds
+        
+        const SHAPES = [
+            { name: "Triangle", chance: 1/2, rarity: 2, color: "#FFFF00" },
+            { name: "Square", chance: 1/5, rarity: 5, color: "#00FF00" },
+            { name: "Pentagon", chance: 1/10, rarity: 10, color: "#00FFFF" },
+            // FIX: Changed proportionalChance to chance to resolve the spawning bug
+            { name: "Hexagon", chance: 1/25, rarity: 25, color: "#FF00FF" }, 
+            { name: "7 Sided Polygon", chance: 1/50, rarity: 50, color: "#FFA500" },
+            { name: "Octagon", chance: 1/100, rarity: 100, color: "#800080" },
+            { name: "Circle", chance: 1/500, rarity: 500, color: "#FF0000" }
+        ];
+        // --- END NEW CONSTANTS ---
+
+
+        // --- GAME STATE VARIABLES ---
+        let currency = 0;
+        let totalUpgrades = 0;
+        let upgradeCost = 50;
+        let highestBaseRoll = 0; 
+        let highestFinalRoll = { 
+            value: 0,
+            baseValue: 0,
+            rank: 'None yet',
+            variants: [],
+            isSecret: false
+        };
+        let autoRollInterval = null;
+        let maxInventory = 10;
+        let inventory = [];
+        let rollIndex = 1;
+        let acceptedRolls = new Set();
+        let discoveredRanks = new Set();
+        let autoStopThreshold = 0;
+        let secretConfig = false;
+        let bulkRollLevel = 0;
+        let bulkRollCost = 500000;
+        let isCutscenePlaying = false; 
+        
+        // NEW: Cutscene state variable 
+        let cutscenesEnabled = true; 
+        
+        // --- NEW EVENT VARIABLES ---
+        let currentEvent = null; 
+        let eventEndTime = 0;    
+        let eventInterval = null;
+        let eventCheckChance = 1; 
+
+        // --- NEW: SHAPES VARIABLES ---
+        let geometrix = 0;
+        let shapesUnlocked = false;
+        let shapeLuckLevel = 0;
+        let shapeLuckCost = 5;
+        let luckMultiLevel = 0;
+        let luckMultiCost = 100;
+        let bulkShapeLevel = 0;
+        let bulkShapeCost = 50;
+        let shapeInterval = null;
+        // ** NEW: Array for active, clickable shapes (will store timerId on load) **
+        let activeShapes = [];
+        // --- END NEW VARIABLES ---
+
+
+        // --- OPTIMIZATION: CALCULATED STATS (set by updateCalculatedStats) ---
+        let currentLuck = 0;
+        let secretLuckMultiplier = 1;
+        let variantChanceMultiplier = 1;
+
+        // --- NEW: CALCULATED STATS ---
+        let luckMultiValue = 1;
+        let shapeLuckBonus = 0;
+        let currentShapeCooldown = SHAPE_SPAWN_INTERVAL_MS;
+        // --- END NEW STATS ---
+
+
+        // --- NEW EVENT FUNCTIONS ---
+
+        function startEvent(event) {
+            if (currentEvent) {
+                clearTimeout(currentEvent.timeoutId);
+                endEvent(currentEvent);
+            }
+            
+            // Create a simple object for currentEvent to avoid saving the massive timeoutId on all rolls
+            currentEvent = { 
+                name: event.name, 
+                duration: event.duration, 
+                description: event.description, 
+                targets: event.targets, 
+                multiplier: event.multiplier, 
+                eventChanceBoost: event.eventChanceBoost 
+            };
+            eventEndTime = Date.now() + event.duration;
+
+            addToTerminal(`🚨 EVENT STARTED: **${event.name}**! ${event.description} for ${event.duration / 1000} seconds!`, true, 'rank-1000-10000'); 
+
+            if (event.name === "Lol") {
+                eventCheckChance = event.eventChanceBoost; 
+            } else {
+                eventCheckChance = 1;
+            }
+
+            // Set the timeout for the actual end
+            currentEvent.timeoutId = setTimeout(() => {
+                endEvent(event);
+            }, event.duration);
+
+            updateStats();
+        }
+
+        function endEvent(event) {
+            addToTerminal(`✅ EVENT ENDED: **${event.name}** is over.`, true);
+
+            if (event.name === "Lol") {
+                eventCheckChance = 1;
+            }
+
+            if (currentEvent && currentEvent.name === event.name) {
+                currentEvent = null;
+                eventEndTime = 0;
+            }
+
+            updateStats();
+        }
+        
+        // FIX: Function to resume an event after loading 
+        function resumeEvent(event, remainingDuration) {
+            currentEvent = event;
+            // The eventEndTime is already set on load
+            if (event.name === "Lol") {
+                eventCheckChance = event.eventChanceBoost; 
+            } else {
+                eventCheckChance = 1;
+            }
+            
+            // FIX: Set a new timeout on load to correctly end the event 
+            currentEvent.timeoutId = setTimeout(() => {
+                endEvent(event);
+            }, remainingDuration);
+            
+            addToTerminal(`Resuming active event: **${event.name}** (${(remainingDuration / 1000).toFixed(1)}s left).`, true, 'rank-1000-10000');
+        }
+
+        function checkEvent() {
+            if (currentEvent) return; 
+
+            for (const event of EVENTS) {
+                const adjustedChance = event.chance / eventCheckChance;
+
+                if (Math.random() < adjustedChance) {
+                    startEvent(event);
+                    return; 
+                }
+            }
+        }
+
+        function startEventLoop() {
+            if (eventInterval) clearInterval(eventInterval);
+            eventInterval = setInterval(checkEvent, EVENT_CHECK_INTERVAL_MS);
+        }
+
+        // --- END NEW EVENT FUNCTIONS ---
+
+
+        // --- CORE FUNCTIONS ---
+
+        function formatNumber(num) {
+            return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        
+        // NEW: UTILITY FUNCTIONS 
+        function formatGeometrix(num) {
+            return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        
+        function formatCooldown(ms) {
+            return (ms / 1000).toFixed(4); // 4 decimal places for cooldown
+        }
+        // --- END NEW UTILITY FUNCTIONS ---
+        
+        function sortInventory(type) {
+            if (type === 'leastRarest') {
+                inventory.sort((a, b) => a.value - b.value);
+            } else if (type === 'mostRarest') {
+                inventory.sort((a, b) => b.value - b.value);
+            }
+            updateInventoryDisplay();
+            addToTerminal(`Inventory sorted by ${type === 'mostRarest' ? 'most rarest' : 'least rarest'} (Variants Applied).`, true);
+            saveGame();
+        }
+
+        // MODIFIED: Centralized function to calculate multipliers after upgrades
+        function updateCalculatedStats() {
+            // Base luck from main upgrades
+            currentLuck = totalUpgrades * LUCK_PER_UPGRADE;
+            
+            // NEW: Shape luck (Upgrade 1) - This is a separate luck stat for shapes
+            shapeLuckBonus = shapeLuckLevel * SHAPE_LUCK_BONUS;
+            
+            // NEW: Luck Multiplier (Upgrade 2)
+            luckMultiValue = Math.pow(2, luckMultiLevel);
+            
+            // Apply Luck Multiplier to main game mechanics (but NOT polygons)
+            // Base luck is modified in generateRoll()
+            secretLuckMultiplier = Math.min(1 + (totalUpgrades * SECRET_LUCK_PER_UPGRADE), MAX_SECRET_LUCK) * luckMultiValue;
+            variantChanceMultiplier = Math.min(1 + (totalUpgrades * VARIANT_CHANCE_PER_UPGRADE), MAX_VARIANT_CHANCE_MULTIPLIER) * luckMultiValue;
+            
+            // NEW: Calculate shape cooldown from Upgrade 3
+            currentShapeCooldown = Math.max(
+                SHAPE_SPAWN_INTERVAL_MS - (bulkShapeLevel * SHAPE_COOLDOWN_DECREASE_MS), 
+                SHAPE_SPAWN_INTERVAL_MS - (MAX_BULK_SHAPE_LEVEL * SHAPE_COOLDOWN_DECREASE_MS) // Cap at Lvl 4
+            );
+        }
+
+        function getVariants(baseValue) {
+            let selectedVariants = [];
+            let totalMultiplier = 1;
+
+            // NEW: Check for "Modified" event
+            let eventVariantMultiplier = 1;
+            if (currentEvent && currentEvent.name === "Modified") {
+                eventVariantMultiplier = currentEvent.multiplier;
+            }
+            
+            for (let i = VARIANTS.length - 1; i >= 0; i--) {
+                const variant = VARIANTS[i];
+                // MODIFIED: Use the calculated variantChanceMultiplier AND event multiplier
+                const adjustedChance = variant.chance * variantChanceMultiplier * eventVariantMultiplier;
+                
+                while (selectedVariants.length < MAX_VARIANTS_PER_ROLL && Math.random() < adjustedChance) {
+                    selectedVariants.push(variant);
+                    totalMultiplier *= variant.multiplier;
+                }
+            }
+            
+            if (selectedVariants.length > 0) {
+                selectedVariants.sort((a, b) => b.multiplier - a.multiplier);
+                return { 
+                    variants: selectedVariants, 
+                    modifiedValue: baseValue * totalMultiplier 
+                };
+            }
+            return null;
+        }
+
+        function generateRoll() {
+            // MODIFIED: Apply the luckMultiValue to the base luck
+            const totalLuck = currentLuck * luckMultiValue;
+            const baseRoll = Math.pow(Math.random(), 3 / POWER_EXPONENT) * (1 + totalLuck);
+            return { value: baseRoll, variant: null };
+        }
+        
+        function getSecretRank() {
+            const rand = Math.random();
+            
+            for (const secret of SECRET_RANKS_CHANCES) {
+                let chanceMultiplier = 1;
+
+                if (currentEvent && currentEvent.targets.includes(secret.name)) {
+                    chanceMultiplier = currentEvent.multiplier;
+                }
+                
+                // MODIFIED: Use the calculated secretLuckMultiplier
+                // This logic is correct: checks from rarest to commonest, returns the rarest success.
+                if (rand < secret.chance * secretLuckMultiplier * chanceMultiplier) {
+                    return secret;
+                }
+            }
+            return null;
+        }
+
+        function getRankInfo(value) {
+            for (let i = 0; i < RANK_TIERS.length; i++) {
+                const tier = RANK_TIERS[i];
+                if (value >= tier.min && value < tier.max) {
+                    return { 
+                        name: tier.name, 
+                        value: value, 
+                        rankNum: i + 1
+                    };
+                }
+            }
+            return { 
+                name: "Improbable", 
+                value: value, 
+                rankNum: RANK_TIERS.length
+            };
+        }
+
+        function getRankClassAndColor(value, variants = []) {
+            let color = "#ffffff";
+            let className = "rank-1-1000";
+            
+            if (value >= 1e30) { className = "rank-improbable"; color = "#008080"; }
+            else if (value >= 1e15) { className = "rank-rainbow"; color = "#ff7f00"; }
+            else if (value >= 1e12) { className = "rank-1000000000000-100000000000000"; color = "#ff69b4"; }
+            else if (value >= 1e11) { className = "rank-100000000000-1000000000000"; color = "#a9a9a9"; } 
+            else if (value >= 1e10) { className = "rank-10000000000-100000000000"; color = "#ffc0cb"; } 
+            else if (value >= 1e9) { className = "rank-1000000000-10000000000"; color = "#00ff00"; }
+            else if (value >= 1e8) { className = "rank-100000000-1000000000"; color = "#8b0000"; }
+            else if (value >= 1e6) { className = "rank-1000000-100000000"; color = "#ff0000"; }
+            else if (value >= 1e5) { className = "rank-100000-1000000"; color = "#0000cd"; }
+            else if (value >= 10000) { className = "rank-10000-100000"; color = "#00ffff"; }
+            else if (value >= 1000) { className = "rank-1000-10000"; color = "#ffff00"; }
+            
+            return { className, color };
+        }
+
+        function getRankClass(value, variants = []) {
+            return getRankClassAndColor(value, variants).className;
+        }
+
+        function addToTerminal(text, isCommand = false, className = "") {
+            const terminal = document.getElementById('terminal');
+            const line = document.createElement('div');
+            line.className = 'output-line';
+            if (isCommand) line.classList.add('command');
+            if (className) line.classList.add(className);
+            line.innerHTML = text;
+
+            // Optimization: Limit terminal lines
+            if (terminal.children.length > 100) {
+                terminal.removeChild(terminal.firstChild);
+            }
+
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+        
+        // NEW: Toggle Cutscenes Function 
+        function toggleCutscenes() {
+            cutscenesEnabled = !cutscenesEnabled;
+            const btn = document.getElementById('cutsceneToggleBtn');
+            const state = cutscenesEnabled ? 'ON' : 'OFF';
+            btn.textContent = `Cutscenes: ${state}`;
+            addToTerminal(`Cutscenes turned ${state}.`, true);
+            saveGame();
+        }
+
+        // MODIFIED: To update all new stats
+        function updateStats() {
+            document.getElementById('currency').textContent = formatNumber(currency);
+            document.getElementById('geometrix').textContent = formatGeometrix(geometrix); // NEW
+            document.getElementById('upgrades').textContent = totalUpgrades;
+            
+            // Use pre-calculated global values
+            document.getElementById('luck').textContent = currentLuck.toFixed(3);
+            document.getElementById('luckMulti').textContent = luckMultiValue.toFixed(2); // NEW
+            document.getElementById('secretLuck').textContent = secretLuckMultiplier.toFixed(2);
+            document.getElementById('variantChance').textContent = variantChanceMultiplier.toFixed(2);
+            
+            document.getElementById('upgradeCost').textContent = formatNumber(upgradeCost);
+            document.getElementById('inventoryCount').textContent = inventory.length;
+            document.getElementById('inventoryMax').textContent = maxInventory;
+            document.getElementById('ranksDiscovered').textContent = discoveredRanks.size;
+            document.getElementById('totalRanks').textContent = TOTAL_RANKS; 
+            
+            document.getElementById('bulkRollLevel').textContent = bulkRollLevel;
+            document.getElementById('bulkRollAmount').textContent = bulkRollLevel + 1;
+            
+            const bulkCostEl = document.getElementById('bulkRollCost');
+            const bulkBtnEl = document.getElementById('buyBulkRollBtn');
+            
+            if (bulkRollLevel >= MAX_BULK_ROLL_LEVEL) {
+                bulkCostEl.textContent = "MAXED";
+                if (bulkBtnEl) {
+                    bulkBtnEl.disabled = true;
+                    bulkBtnEl.textContent = "Bulk Roll (MAXED)";
+                }
+            } else {
+                bulkCostEl.textContent = formatNumber(bulkRollCost);
+                if (bulkBtnEl) {
+                    bulkBtnEl.disabled = currency < bulkRollCost; // Disable if not enough currency
+                    bulkBtnEl.textContent = "Buy Bulk Roll";
+                }
+            }
+            
+            // Dynamic Event Status Display
+            const statsContainer = document.querySelector('.stats');
+            let eventStat = document.getElementById('eventStat');
+            if (!eventStat) {
+                eventStat = document.createElement('div');
+                eventStat.className = 'stat-item';
+                eventStat.id = 'eventStat';
+                statsContainer.appendChild(eventStat);
+            }
+            const eventName = currentEvent ? currentEvent.name : "None";
+            const timeLeft = currentEvent ? Math.max(0, eventEndTime - Date.now()) : 0;
+            const timeLeftFormatted = (timeLeft / 1000).toFixed(1);
+            eventStat.innerHTML = `Active Event: <span style="color: ${currentEvent ? '#00FFFF' : '#ffffff'};">${eventName}</span> (${timeLeftFormatted}s)`;
+            
+            // Rarest Roll
+            if (highestFinalRoll.value > 0) {
+                const { className, color } = getRankClassAndColor(highestFinalRoll.value, highestFinalRoll.variants);
+                let rankClass = className;
+                let rollColor = color;
+                let displayName = highestFinalRoll.rank;
+                if (displayName === "~Nonavacious~") {
+                    rankClass += " secret-nonavacious";
+                }
+                document.getElementById('rarest').innerHTML = 
+                    `<span class="${rankClass}" style="color: ${rollColor};">${formatNumber(highestFinalRoll.value)} [${displayName}]</span>`;
+            }
+
+            // NEW: Update Cutscene Toggle Button 
+            const cutsceneBtn = document.getElementById('cutsceneToggleBtn');
+            if (cutsceneBtn) {
+                cutsceneBtn.textContent = `Cutscenes: ${cutscenesEnabled ? 'ON' : 'OFF'}`;
+            }
+
+            // --- NEW: Shapes GUI Updates ---
+            document.getElementById('shapes-gui').style.display = shapesUnlocked ? 'block' : 'none';
+            document.getElementById('shapes-unlock-controls').style.display = shapesUnlocked ? 'none' : 'grid'; // Use grid to match other controls
+            document.getElementById('unlockShapesBtn').disabled = currency < UNLOCK_SHAPES_COST;
+
+            if (shapesUnlocked) {
+                document.getElementById('shapeLuckBonus').textContent = shapeLuckBonus.toFixed(1);
+                document.getElementById('bulkShapeAmount').textContent = bulkShapeLevel + 1;
+                document.getElementById('bulkShapeLevel').textContent = bulkShapeLevel;
+                document.getElementById('shapeCooldown').textContent = formatCooldown(currentShapeCooldown);
+                
+                // Shape Luck Button (Upgrade 1)
+                const shapeLuckBtn = document.getElementById('buyShapeLuckBtn');
+                document.getElementById('shapeLuckCost').textContent = formatGeometrix(shapeLuckCost);
+                if (shapeLuckLevel >= MAX_SHAPE_LUCK_LEVEL) {
+                    shapeLuckBtn.disabled = true;
+                    shapeLuckBtn.innerHTML = `Shape Luck (MAXED)`;
+                } else {
+                    shapeLuckBtn.disabled = geometrix < shapeLuckCost;
+                    shapeLuckBtn.innerHTML = `Shape Luck (+0.1x) - Cost: <span id="shapeLuckCost">${formatGeometrix(shapeLuckCost)}</span> GMX`;
+                }
+                
+                // Luck Multi Button (Upgrade 2)
+                const luckMultiBtn = document.getElementById('buyLuckMultiBtn');
+                document.getElementById('luckMultiCost').textContent = formatGeometrix(luckMultiCost);
+                luckMultiBtn.disabled = geometrix < luckMultiCost;
+
+                // Bulk Shape Button (Upgrade 3)
+                const bulkShapeBtn = document.getElementById('buyBulkShapeBtn');
+                document.getElementById('bulkShapeCost').textContent = formatGeometrix(bulkShapeCost);
+                if (bulkShapeLevel >= MAX_BULK_SHAPE_LEVEL) {
+                    bulkShapeBtn.disabled = true;
+                    bulkShapeBtn.innerHTML = `Bulk/Cooldown (MAXED)`;
+                } else {
+                    bulkShapeBtn.disabled = geometrix < bulkShapeCost;
+                    bulkShapeBtn.innerHTML = `Bulk/Cooldown Lvl <span id="bulkShapeLevelBtn">${bulkShapeLevel + 1}</span> - Cost: <span id="bulkShapeCost">${formatGeometrix(bulkShapeCost)}</span> GMX`;
+                }
+            }
+            // --- END NEW UPDATES ---
+        }
+
+        function updateInventoryDisplay() {
+            const inventoryContent = document.getElementById('inventoryContent');
+            if (inventory.length === 0) {
+                inventoryContent.innerHTML = 'Empty';
+            } else {
+                inventoryContent.innerHTML = inventory.map((item, idx) => {
+                    const { className: rankClass, color: rollColor } = getRankClassAndColor(item.value, item.variants);
+                    let displayClass = rankClass;
+                    if (item.rank === "~Nonavacious~") {
+                        displayClass += " secret-nonavacious";
+                    }
+                    let variantText = '';
+                    if (item.variants && item.variants.length > 0) {
+                        variantText = item.variants.map(v => `<span style="color: ${v.color}; font-weight: bold;">[${v.name}]</span>`).join('') + ' ';
+                    }
+                    let suffix = "";
+                    if (item.rank === "100") suffix = " * 💯";
+                    if (item.rank === ":[{(absolute zero)}]:") suffix = " * 0";
+                    return `<div class="inventory-item" onclick="removeFromInventory(${idx})">
+                        #${item.index}: ${variantText}<span class="${displayClass}" style="color: ${rollColor};">${formatNumber(item.value)} [${item.rank}]${suffix}</span>
+                    </div>`;
+                }).join('');
+            }
+        }
+
+        function updateIndexDisplay() {
+            const indexContent = document.getElementById('indexContent');
+            let html = '<div style="margin-bottom: 15px;"><strong>Normal Ranks:</strong></div>';
+            
+            RANK_TIERS.forEach(tier => {
+                const discovered = discoveredRanks.has(tier.name);
+                let rankClass = getRankClass((tier.min + tier.max) / 2); 
+                if (tier.name === "Improbable") {
+                    rankClass = "rank-improbable";
+                }
+                html += `<div class="index-item ${discovered ? 'discovered' : 'locked'}">
+                    ${discovered ? `<span class="${rankClass}">${tier.name}</span>` : '???'}
+                </div>`;
+            });
+            
+            html += '<div style="margin: 15px 0;"><strong>Secret Ranks:</strong></div>';
+            SECRET_RANKS_CHANCES.forEach(rankInfo => {
+                const rankName = rankInfo.name;
+                const discovered = discoveredRanks.has(rankName);
+                const rankStyle = `color: #ff69b4;`;
+                html += `<div class="index-item ${discovered ? 'discovered' : 'locked'}">
+                    ${discovered ? `<span style="${rankStyle}">${rankName}</span>` : '???'}
+                </div>`;
+            });
+            
+            indexContent.innerHTML = html;
+        }
+
+        function addToInventory(value, rank, index, variants = [], baseValue = null) {
+            if (inventory.length >= maxInventory) {
+                addToTerminal('Inventory full! Buy upgrades to increase space.', true);
+                return false;
+            }
+            const isSecret = SECRET_RANKS_CHANCES.map(r => r.name).includes(rank);
+            inventory.push({ value, rank, index, variants, baseValue: baseValue || value, isSecret });
+            updateInventoryDisplay();
+            updateStats();
+            saveGame();
+            return true;
+        }
+
+        function removeFromInventory(idx) {
+            const item = inventory[idx];
+            
+            let variantText = '';
+            if (item.variants && item.variants.length > 0) {
+                variantText = item.variants.map(v => `[${v.name}]`).join('') + ' ';
+            }
+            
+            let suffix = "";
+            if (item.rank === "100") suffix = " * 💯";
+            if (item.rank === ":[{(absolute zero)}]:") suffix = " * 0";
+            addToTerminal(`Removed from inventory: #${item.index} ${variantText}${formatNumber(item.value)} [${item.rank}]${suffix}`, true);
+            
+            acceptedRolls.delete(item.index);
+            
+            const rollElement = document.getElementById(`roll-${item.index}`);
+            if (rollElement) {
+                rollElement.style.opacity = '1';
+                rollElement.style.cursor = 'pointer';
+                
+                rollElement.onclick = function() { 
+                    tryAddToInventory(item.value, item.rank, item.index, rollElement); 
+                };
+            }
+            
+            inventory.splice(idx, 1);
+            updateInventoryDisplay();
+            updateStats();
+            saveGame();
+        }
+
+        function playCutscene(rollValue, isSecret = false) {
+            // NEW: Check if cutscenes are enabled 
+            if (!cutscenesEnabled) {
+                return Promise.resolve();
+            }
+
+            return new Promise(resolve => {
+                const wasAutoRolling = autoRollInterval !== null;
+                if (wasAutoRolling) {
+                    toggleAutoRoll();
+                }
+                
+                isCutscenePlaying = true;
+                const body = document.body;
+                const overlay = document.getElementById('cutscene-overlay');
+                const starElement = document.getElementById('star-element');
+                
+                body.classList.add('cutscene-active');
+                
+                const { color } = getRankClassAndColor(rollValue);
+                starElement.style.color = color;
+                
+                let starShapeClass = 'star-4'; 
+                if (rollValue >= 1e12 && isSecret) {
+                    starShapeClass = 'star-12';
+                } else if (rollValue >= 1e9 && isSecret) {
+                    starShapeClass = 'star-6';
+                } else if (rollValue >= 1e12) {
+                    starShapeClass = 'star-8';
+                }
+                
+                starElement.className = starShapeClass;
+                starElement.style.transform = 'translate(-50%, -50%) rotate(0deg) scale(1)'; 
+                let currentScale = 1;
+                let currentRotation = 0;
+                let rotationSpeed = 3; 
+                let sizeInterval = null;
+                
+                setTimeout(() => {
+                    starElement.style.opacity = 1;
+                }, STAR_FADE_IN_MS);
+                
+                const spinUpdate = () => {
+                    currentRotation += rotationSpeed;
+                    starElement.style.transform = `translate(-50%, -50%) rotate(${currentRotation}deg) scale(${currentScale})`; 
+                    if (isCutscenePlaying) {
+                        requestAnimationFrame(spinUpdate);
+                    }
+                };
+
+                requestAnimationFrame(spinUpdate);
+
+                setTimeout(() => {
+                    rotationSpeed = 15; 
+                    
+                    sizeInterval = setInterval(() => {
+                        currentScale *= SIZE_MULTIPLIER_PER_UPDATE;
+                    }, SIZE_UPDATE_INTERVAL_MS);
+
+                }, SPIN_ACCEL_MS);
+                
+                setTimeout(() => {
+                    starElement.style.opacity = 0;
+                    body.classList.add('cutscene-flash');
+                    
+                    setTimeout(() => {
+                        isCutscenePlaying = false;
+                        clearInterval(sizeInterval);
+                        
+                        body.classList.remove('cutscene-flash');
+                        body.classList.remove('cutscene-active');
+                        
+                        setTimeout(() => {
+                            starElement.style.transform = 'translate(-50%, -50%) rotate(0deg) scale(1)';
+                            starElement.style.color = '';
+                            starElement.className = '';
+                            if (wasAutoRolling) {
+                                toggleAutoRoll();
+                            }
+                            resolve();
+                        }, 500);
+                        
+                    }, WHITE_FLASH_DURATION_MS);
+                    
+                }, CUTSCENE_DURATION_MS - WHITE_FLASH_DURATION_MS);
+            });
+        }
+
+        async function roll() {
+            if (isCutscenePlaying) {
+                addToTerminal('Wait for the cutscene to finish!', true);
+                return;
+            }
+            
+            const rollResults = [];
+            let maxRollValueInBulk = 0;
+            let isMaxRollSecret = false;
+            
+            for (let i = 0; i < (bulkRollLevel + 1); i++) {
+                const rollResult = generateRoll();
+                const baseValue = rollResult.value;
+                const variantResult = getVariants(baseValue);
+                let displayValue = variantResult ? variantResult.modifiedValue : baseValue;
+                const variants = variantResult ? variantResult.variants : [];
+                
+                // IMPORTANT: getSecretRank is called with no arguments as it relies on Math.random() internally.
+                const secretResult = getSecretRank(); 
+                const displayName = secretResult ? secretResult.name : getRankInfo(baseValue).name;
+                const isSecret = !!secretResult;
+                
+                let secretRarityMultiplier = 1;
+                if (isSecret) {
+                    secretRarityMultiplier = secretResult.rarity;
+                    displayValue *= secretRarityMultiplier;
+                }
+                
+                rollResults.push({ baseValue, displayValue, variants, displayName, isSecret, secretRarityMultiplier });
+                
+                if (displayValue > maxRollValueInBulk) {
+                    maxRollValueInBulk = displayValue;
+                    isMaxRollSecret = isSecret;
+                }
+            }
+            
+            if (cutscenesEnabled && maxRollValueInBulk >= 1e9) {
+                await playCutscene(maxRollValueInBulk, isMaxRollSecret);
+            }
+            
+            for (const rollData of rollResults) {
+                const { baseValue, displayValue, variants, displayName, isSecret, secretRarityMultiplier } = rollData;
+                
+                const rankInfo = getRankInfo(displayValue); 
+                const currencyGain = Math.pow(rankInfo.rankNum, 3);
+                
+                const { className: rankClassBase, color: rollColorBase } = getRankClassAndColor(displayValue, variants);
+
+                let rankClass = rankClassBase;
+                let rollColor = rollColorBase;
+
+                let suffix = "";
+                if (displayName === "100") suffix = ` * 💯`;
+                if (displayName === ":[{(absolute zero)}]:") suffix = ` * 0`;
+                
+                const secretMultiplierText = isSecret ? ` (x${formatNumber(secretRarityMultiplier)})` : '';
+
+
+                if (displayName === "~Nonavacious~") {
+                    rankClass += " secret-nonavacious";
+                }
+                
+                const currentIndex = rollIndex++;
+                
+                if (!discoveredRanks.has(displayName)) {
+                    discoveredRanks.add(displayName);
+                    addToTerminal(`🎉 NEW RANK DISCOVERED: ${displayName}!`, true);
+                    updateIndexDisplay();
+                }
+                
+                currency += currencyGain;
+                
+                if (baseValue > highestBaseRoll) {
+                    highestBaseRoll = baseValue;
+                }
+
+                if (displayValue > highestFinalRoll.value) {
+                    highestFinalRoll = {
+                        value: displayValue,
+                        baseValue: baseValue,
+                        rank: displayName,
+                        variants: variants,
+                        isSecret: isSecret
+                    };
+                }
+                
+                const isSecretRank = isSecret;
+                const shouldStopOnValue = autoStopThreshold > 0 && displayValue >= autoStopThreshold;
+                const shouldStopOnSecret = secretConfig && isSecretRank;
+                
+                const variantText = variants.map(v => `<span style="color: ${v.color}; font-weight: bold;">[${v.name}]</span>`).join('') + ' ';
+                
+                const variantDataAttr = variants.length > 0 ? `data-variants='${JSON.stringify(variants)}'` : '';
+                const baseValueAttr = `data-basevalue='${baseValue}'`;
+                
+                addToTerminal(
+                    `#${currentIndex}: ${variantText}<span class="clickable-roll ${rankClass}" style="color: ${rollColor};" onclick="tryAddToInventory(${displayValue}, '${displayName}', ${currentIndex}, this)" id="roll-${currentIndex}" ${variantDataAttr} ${baseValueAttr}>${formatNumber(displayValue)} [${displayName}]${secretMultiplierText}${suffix}</span> (+${currencyGain.toFixed(2)} currency)`
+                );
+
+                if (autoRollInterval && (shouldStopOnValue || shouldStopOnSecret)) {
+                    const btn = document.getElementById('autoRollBtn');
+                    clearInterval(autoRollInterval);
+                    autoRollInterval = null;
+                    btn.textContent = 'Auto Roll';
+                    btn.classList.remove('active');
+                    
+                    const reason = shouldStopOnSecret ? `secret rank [${displayName}]` : `threshold (${formatNumber(displayValue)} ≥ ${autoStopThreshold})`;
+                    addToTerminal(`Auto-roll stopped: ${reason} detected!`, true);
+                    
+                    break; 
+                }
+            }
+            
+            updateStats();
+            saveGame();
+        }
+
+        function tryAddToInventory(value, rank, index, element) {
+            if (acceptedRolls.has(index)) {
+                addToTerminal(`Roll #${index} has already been accepted!`, true);
+                return;
+            }
+            
+            let variants = [];
+            let baseValue = value;
+            
+            if (element && element.dataset) {
+                if (element.dataset.variants) {
+                    try {
+                        variants = JSON.parse(element.dataset.variants);
+                    } catch (e) {
+                        console.error('Error parsing variants:', e);
+                    }
+                }
+                if (element.dataset.basevalue) {
+                    baseValue = parseFloat(element.dataset.basevalue);
+                }
+            }
+            
+            if (addToInventory(value, rank, index, variants, baseValue)) {
+                acceptedRolls.add(index);
+                
+                const variantText = variants.map(v => `[${v.name}]`).join('') + ' ';
+                
+                let suffix = "";
+                if (rank === "100") suffix = " * 💯";
+                if (rank === ":[{(absolute zero)}]:") suffix = " * 0";
+                addToTerminal(`Added to inventory: #${index} ${variantText}${formatNumber(value)} [${rank}]${suffix}`, true);
+                
+                const rollElement = document.getElementById(`roll-${index}`);
+                if (rollElement) {
+                    rollElement.style.opacity = '0.5';
+                    rollElement.style.cursor = 'not-allowed';
+                    rollElement.onclick = null;
+                }
+                
+                saveGame();
+            }
+        }
+
+        function toggleAutoRoll() {
+            if (isCutscenePlaying) {
+                addToTerminal('Cannot toggle auto-roll during a cutscene!', true);
+                return;
+            }
+            
+            const btn = document.getElementById('autoRollBtn');
+            if (autoRollInterval) {
+                clearInterval(autoRollInterval);
+                autoRollInterval = null;
+                btn.textContent = 'Auto Roll';
+                btn.classList.remove('active');
+                addToTerminal('Auto-rolling stopped.', true);
+            } else {
+                autoStopThreshold = parseFloat(document.getElementById('autoStopThreshold').value) || 0;
+                secretConfig = document.getElementById('secretConfig').checked;
+                autoRollInterval = setInterval(roll, AUTO_ROLL_DELAY_MS);
+                btn.textContent = 'Stop Auto Roll';
+                btn.classList.add('active');
+                let message = 'Auto-rolling started...';
+                if (autoStopThreshold > 0) {
+                    message += ` (stop at ≥${autoStopThreshold})`;
+                }
+                if (secretConfig) {
+                    message += ` (stop on secret ranks)`;
+                }
+                addToTerminal(message, true);
+            }
+        }
+
+        function buyUpgrade() {
+            if (currency >= upgradeCost) {
+                currency -= upgradeCost;
+                totalUpgrades++;
+                maxInventory += INVENTORY_PER_UPGRADE;
+                
+                updateCalculatedStats();
+                
+                addToTerminal(
+                    `Upgrade purchased! Total upgrades: ${totalUpgrades} | Luck: +${currentLuck.toFixed(3)} | Secret Luck: ${secretLuckMultiplier.toFixed(2)}x | Inventory space: ${maxInventory} | Currency: ${currency.toFixed(2)}`,
+                    true
+                );
+                
+                upgradeCost *= UPGRADE_COST_MULTIPLIER;
+                addToTerminal(`Next upgrade cost: ${upgradeCost.toFixed(2)}`);
+                
+                updateStats();
+                saveGame();
+            } else {
+                addToTerminal(
+                    `Not enough currency! You have ${currency.toFixed(2)} but need ${upgradeCost.toFixed(2)}`,
+                    true
+                );
+            }
+        }
+
+        function buyBulkRoll() {
+            if (bulkRollLevel >= MAX_BULK_ROLL_LEVEL) {
+                addToTerminal('Bulk Roll is already maxed out!', true);
+                return;
+            }
+            
+            if (currency >= bulkRollCost) {
+                currency -= bulkRollCost;
+                bulkRollLevel++;
+                
+                addToTerminal(
+                    `Bulk Roll purchased! Level: ${bulkRollLevel} | Rolls per click: ${bulkRollLevel + 1} | Currency: ${currency.toFixed(2)}`,
+                    true
+                );
+                
+                if (bulkRollLevel < MAX_BULK_ROLL_LEVEL) {
+                    bulkRollCost *= BULK_ROLL_COST_MULTIPLIER;
+                    addToTerminal(`Next Bulk Roll cost: ${bulkRollCost.toFixed(2)}`);
+                } else {
+                    addToTerminal('Bulk Roll is now MAXED!');
+                }
+                
+                updateStats();
+                saveGame();
+            } else {
+                addToTerminal(
+                    `Not enough currency! You have ${currency.toFixed(2)} but need ${bulkRollCost.toFixed(2)}`,
+                    true
+                );
+            }
+        }
+
+        function showRarest() {
+            if (highestFinalRoll.value === 0) {
+                addToTerminal('No rolls yet!', true);
+            } else {
+                const { className, color } = getRankClassAndColor(highestFinalRoll.value, highestFinalRoll.variants);
+                let rankClass = className;
+                let rollColor = color;
+                const displayName = highestFinalRoll.rank;
+
+                if (displayName === "~Nonavacious~") {
+                    rankClass += " secret-nonavacious";
+                }
+
+                let variantText = '';
+                if (highestFinalRoll.variants && highestFinalRoll.variants.length > 0) {
+                    variantText = highestFinalRoll.variants.map(v => `[${v.name}]`).join('') + ' ';
+                }
+                
+                addToTerminal(
+                    `Rarest roll: ${variantText}<span class="${rankClass}" style="color: ${rollColor};">${formatNumber(highestFinalRoll.value)} [${displayName}]</span>`,
+                    true
+                );
+            }
+        }
+
+        function clearTerminal() {
+            const terminal = document.getElementById('terminal');
+            const welcomeMsg = terminal.querySelector('.welcome-message');
+            terminal.innerHTML = '';
+            if (welcomeMsg) {
+                terminal.appendChild(welcomeMsg);
+            }
+        }
+
+
+        // --- NEW: SHAPE SYSTEM FUNCTIONS ---
+
+        function addToShapeTerminal(text) {
+            const terminal = document.getElementById('shape-spawn-output');
+            const line = document.createElement('div');
+            line.className = 'shape-spawn-line';
+            line.innerHTML = text; 
+            
+            if (terminal.children.length > 20) {
+                terminal.removeChild(terminal.firstChild);
+            }
+            
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function calculateGeometrixGain(shape) {
+            if (shape.name === "Circle") {
+                // formula for circle: Math.random() ** -1.5 (starts at 250)
+                const base = Math.pow(Math.random(), -1.5);
+                return base * 250;
+            } else {
+                // formula for others: actual rarity of polygon / 2
+                return shape.rarity / 2;
+            }
+        }
+        
+        // NEW: Function to remove a shape from the array and DOM
+        function despawnShape(shapeId, isCollected = false) {
+            const shapeIndex = activeShapes.findIndex(s => s.id === shapeId);
+            
+            if (shapeIndex === -1) {
+                return; // Already gone
+            }
+
+            const shapeData = activeShapes[shapeIndex];
+            
+            // Clear the timer if it exists (safety)
+            if (shapeData.timerId) {
+                clearTimeout(shapeData.timerId);
+            }
+            
+            // Remove from array
+            activeShapes.splice(shapeIndex, 1);
+            
+            // Remove from DOM
+            const element = document.getElementById(`shape-${shapeId}`);
+            if (element) {
+                 if (isCollected) {
+                    // Visual feedback for collected shape
+                    element.style.transform = 'scale(1.5)';
+                    element.style.opacity = '0';
+                    setTimeout(() => element.remove(), 200);
+                 } else {
+                    element.remove();
+                 }
+            }
+            
+            if (!isCollected) {
+                addToShapeTerminal(`A **${shapeData.name}** despawned (not collected)!`);
+            }
+            
+            saveGame();
+        }
+
+        // NEW: Function to re-render shapes after a load (recreates DOM elements from saved data)
+        function renderActiveShapes() {
+            const shapesField = document.getElementById('shapes-field');
+            shapesField.innerHTML = ''; 
+            
+            // Filter out expired shapes and create timers for remaining ones
+            activeShapes = activeShapes.filter(shapeData => {
+                const timeElapsed = Date.now() - shapeData.spawnTime;
+                
+                // If expired, skip and log as despawned
+                if (timeElapsed >= SHAPE_DESPAWN_TIME_MS) {
+                    addToShapeTerminal(`A **${shapeData.name}** despawned while you were away!`);
+                    return false;
+                }
+
+                // If not expired, create DOM element
+                const shapeElement = document.createElement('div');
+                shapeElement.id = `shape-${shapeData.id}`;
+                shapeElement.className = `clickable-shape shape-${shapeData.name.replace(/\s/g, '-')}`;
+                shapeElement.style.backgroundColor = shapeData.color;
+                shapeElement.style.left = `${shapeData.posX}px`;
+                shapeElement.style.top = `${shapeData.posY}px`;
+                shapeElement.textContent = shapeData.name[0];
+                shapeElement.onclick = () => collectShape(shapeData.id);
+                
+                shapesField.appendChild(shapeElement);
+
+                // Resume the timer for the remaining duration
+                const remainingTime = SHAPE_DESPAWN_TIME_MS - timeElapsed;
+                shapeData.timerId = setTimeout(() => {
+                    despawnShape(shapeData.id, false); 
+                }, remainingTime);
+
+                return true; // Keep in the activeShapes array
+            });
+            
+            // Save to ensure expired shapes are removed from save data immediately
+            saveGame(); 
+        }
+
+
+        // MODIFIED: Now creates clickable visual elements and sets a despawn timer
+        function spawnShape() {
+            if (!shapesUnlocked) return;
+            
+            let totalPossibleGain = 0;
+            let spawnedCount = 0;
+            const spawnCount = bulkShapeLevel + 1; 
+
+            const shapesField = document.getElementById('shapes-field');
+            const fieldWidth = shapesField.clientWidth;
+            const fieldHeight = shapesField.clientHeight;
+
+
+            for (let j = 0; j < spawnCount; j++) {
+                const cumulativeChances = [];
+                let cumulativeSum = 0;
+
+                for (const shape of SHAPES) {
+                    // Apply shape luck (Upgrade 1) as a multiplier to the base chance
+                    // The 'chance' property is now guaranteed to exist for all shapes.
+                    const adjustedChance = shape.chance * (1 + shapeLuckBonus);
+                    cumulativeSum += adjustedChance;
+                    cumulativeChances.push({ maxChance: cumulativeSum, shape: shape });
+                }
+                
+                let rand = Math.random() * cumulativeSum; 
+                let selectedShape = null;
+
+                for (const item of cumulativeChances) {
+                    if (rand < item.maxChance) { 
+                        selectedShape = item.shape;
+                        break;
+                    }
+                }
+                
+                // Fallback to the most common shape (Triangle) to guarantee a spawn if something fails
+                if (!selectedShape) {
+                    selectedShape = SHAPES[0]; 
+                }
+
+                const gain = calculateGeometrixGain(selectedShape);
+                totalPossibleGain += gain;
+                spawnedCount++;
+                
+                // --- NEW VISUAL SPAWNING LOGIC ---
+                const shapeId = Date.now().toString() + Math.random().toString(36).substring(2, 9);
+                const shapeSize = 30;
+                const posX = Math.random() * (fieldWidth - shapeSize); 
+                const posY = Math.random() * (fieldHeight - shapeSize); 
+
+                const shapeElement = document.createElement('div');
+                shapeElement.id = `shape-${shapeId}`;
+                shapeElement.className = `clickable-shape shape-${selectedShape.name.replace(/\s/g, '-')}`; 
+                shapeElement.style.backgroundColor = selectedShape.color;
+                shapeElement.style.left = `${posX}px`;
+                shapeElement.style.top = `${posY}px`;
+                shapeElement.textContent = selectedShape.name[0]; // First letter display
+
+                // Store data 
+                const shapeData = {
+                    id: shapeId,
+                    name: selectedShape.name,
+                    gain: gain,
+                    color: selectedShape.color,
+                    posX: posX,
+                    posY: posY,
+                    spawnTime: Date.now(), // NEW: Record spawn time
+                    timerId: null // Placeholder for the timeout ID
+                };
+                
+                // Set the despawn timer and store the ID
+                shapeData.timerId = setTimeout(() => {
+                    despawnShape(shapeId, false); // isCollected = false
+                }, SHAPE_DESPAWN_TIME_MS);
+
+                activeShapes.push(shapeData);
+                
+                // Attach click handler
+                shapeElement.onclick = () => collectShape(shapeData.id);
+                
+                shapesField.appendChild(shapeElement);
+                // --- END NEW VISUAL SPAWNING LOGIC ---
+            }
+            
+            // Display total GMX that can be collected (not collected yet)
+            if (spawnedCount > 0) {
+                addToShapeTerminal(`Spawned ${spawnedCount} shapes. Max collection: ${formatGeometrix(totalPossibleGain)} GMX.`);
+            }
+        }
+        
+        // MODIFIED: Function to collect a shape when clicked
+        function collectShape(shapeId) {
+            const shapeIndex = activeShapes.findIndex(s => s.id === shapeId);
+            
+            if (shapeIndex === -1) {
+                return; 
+            }
+
+            const shapeData = activeShapes[shapeIndex];
+            geometrix += shapeData.gain;
+            
+            addToTerminal(`Collected **${shapeData.name}** (+${formatGeometrix(shapeData.gain)} GMX)!`, true, 'command');
+
+            // Remove the shape and clear its timer
+            // Pass true to indicate it was collected, which adds a short visual transition
+            despawnShape(shapeId, true); 
+            
+            updateStats();
+        }
+
+        // MODIFIED: No immediate spawn on interval start
+        function startShapeInterval() {
+            if (shapeInterval) clearInterval(shapeInterval);
+            if (!shapesUnlocked) return;
+            
+            shapeInterval = setInterval(spawnShape, currentShapeCooldown);
+            
+            addToTerminal(`Shape spawning interval set to ${formatCooldown(currentShapeCooldown)}s.`, true, '#00FF00');
+        }
+
+        function unlockShapes() {
+            if (currency >= UNLOCK_SHAPES_COST) {
+                currency -= UNLOCK_SHAPES_COST;
+                shapesUnlocked = true;
+                addToTerminal(`**Shapes GUI unlocked!** Start collecting the clickable polygons.`, true, '#00FF00');
+                updateCalculatedStats();
+                startShapeInterval(); // Start the spawner
+                updateStats();
+                saveGame();
+            } else {
+                addToTerminal(`Not enough currency! Need ${formatNumber(UNLOCK_SHAPES_COST)} to unlock.`, true);
+            }
+        }
+
+        // Upgrade 1
+        function buyShapeLuckUpgrade() {
+            if (shapeLuckLevel >= MAX_SHAPE_LUCK_LEVEL) {
+                addToTerminal('Shape Luck is maxed out!', true, '#FF00FF');
+                return;
+            }
+            if (geometrix >= shapeLuckCost) {
+                geometrix -= shapeLuckCost;
+                shapeLuckLevel++;
+                
+                addToTerminal(
+                    `Shape Luck purchased! Level: ${shapeLuckLevel}/${MAX_SHAPE_LUCK_LEVEL}`,
+                    true, '#00FF00'
+                );
+                
+                shapeLuckCost *= SHAPE_LUCK_COST_MULTIPLIER;
+                updateCalculatedStats();
+                updateStats();
+                saveGame();
+            } else {
+                addToTerminal(`Not enough Geometrix! Need ${formatGeometrix(shapeLuckCost)} GMX.`, true);
+            }
+        }
+        
+        // Upgrade 2
+        function buyLuckMultiUpgrade() {
+            if (geometrix >= luckMultiCost) {
+                geometrix -= luckMultiCost;
+                luckMultiLevel++;
+                
+                updateCalculatedStats(); // Recalculate multipliers
+
+                addToTerminal(
+                    `Luck Multiplier purchased! Level: ${luckMultiLevel} | New Multi: x${luckMultiValue.toFixed(2)}`,
+                    true, '#00FF00'
+                );
+                
+                luckMultiCost *= LUCK_MULTI_COST_MULTIPLIER;
+                updateStats();
+                saveGame();
+            } else {
+                addToTerminal(`Not enough Geometrix! Need ${formatGeometrix(luckMultiCost)} GMX.`, true);
+            }
+        }
+
+        // Upgrade 3
+        function buyBulkShapeUpgrade() {
+            if (bulkShapeLevel >= MAX_BULK_SHAPE_LEVEL) {
+                addToTerminal('Bulk/Cooldown is maxed out!', true, '#FF00FF');
+                return;
+            }
+            if (geometrix >= bulkShapeCost) {
+                geometrix -= bulkShapeCost;
+                bulkShapeLevel++;
+                
+                updateCalculatedStats(); // Recalculate cooldown
+                
+                addToTerminal(
+                    `Bulk/Cooldown purchased! Level: ${bulkShapeLevel}/${MAX_BULK_SHAPE_LEVEL} | Spawns: ${bulkShapeLevel + 1} | Cooldown: ${formatCooldown(currentShapeCooldown)}s`,
+                    true, '#00FF00'
+                );
+                
+                if (bulkShapeLevel < MAX_BULK_SHAPE_LEVEL) {
+                    bulkShapeCost *= BULK_SHAPE_COST_MULTIPLIER;
+                }
+                
+                startShapeInterval(); // Restart interval with new cooldown
+                updateStats();
+                saveGame();
+            } else {
+                addToTerminal(`Not enough Geometrix! Need ${formatGeometrix(bulkShapeCost)} GMX.`, true);
+            }
+        }
+        // --- END NEW FUNCTIONS ---
+
+
+        // MODIFIED: To exclude the volatile timerId from saved data
+        function saveGame() {
+            const gameState = {
+                currency,
+                totalUpgrades,
+                upgradeCost,
+                highestBaseRoll, 
+                // FIX: Ensure highestFinalRoll has necessary properties for old saves 
+                highestFinalRoll: highestFinalRoll || { 
+                    value: 0, 
+                    baseValue: 0, 
+                    rank: 'None yet', 
+                    variants: [], 
+                    isSecret: false 
+                },
+                maxInventory,
+                inventory,
+                rollIndex,
+                acceptedRolls: Array.from(acceptedRolls),
+                discoveredRanks: Array.from(discoveredRanks),
+                bulkRollLevel: bulkRollLevel,
+                bulkRollCost: bulkRollCost,
+                
+                // NEW: Cutscene State 
+                cutscenesEnabled: cutscenesEnabled,
+
+                // FIX: Event State 
+                currentEvent: currentEvent ? { name: currentEvent.name, duration: currentEvent.duration, description: currentEvent.description, targets: currentEvent.targets, multiplier: currentEvent.multiplier, eventChanceBoost: currentEvent.eventChanceBoost } : null,
+                eventEndTime: eventEndTime,
+                eventCheckChance: eventCheckChance,
+
+                // NEW: Shapes Save Data
+                geometrix,
+                shapesUnlocked,
+                shapeLuckLevel,
+                shapeLuckCost,
+                luckMultiLevel,
+                luckMultiCost,
+                bulkShapeLevel,
+                bulkShapeCost,
+                // NEW: Active Shapes Array (only necessary properties)
+                activeShapes: activeShapes.map(shape => ({
+                    id: shape.id,
+                    name: shape.name,
+                    gain: shape.gain,
+                    color: shape.color,
+                    posX: shape.posX,
+                    posY: shape.posY,
+                    spawnTime: shape.spawnTime // Only save the spawn time
+                }))
+            };
+            localStorage.setItem('calisRNGGame', JSON.stringify(gameState));
+        }
+
+        // MODIFIED: To load new save data (Cutscene state, Event state, and activeShapes)
+        function loadGame() {
+            const saved = localStorage.getItem('calisRNGGame');
+            if (saved) {
+                try {
+                    const gameState = JSON.parse(saved);
+                    currency = gameState.currency || 0;
+                    totalUpgrades = gameState.totalUpgrades || 0;
+                    upgradeCost = gameState.upgradeCost || 50;
+                    
+                    // FIX: Safely load and initialize highestFinalRoll 
+                    if (gameState.highestFinalRoll) {
+                        highestFinalRoll = gameState.highestFinalRoll;
+                        // Ensure isSecret property exists for old saves
+                        if (typeof highestFinalRoll.isSecret === 'undefined') {
+                             highestFinalRoll.isSecret = SECRET_RANKS_CHANCES.map(r => r.name).includes(highestFinalRoll.rank);
+                        }
+                    } else {
+                        const baseRoll = gameState.highestRoll || 0;
+                        const rankInfo = getRankInfo(baseRoll);
+                         highestFinalRoll = {
+                            value: baseRoll,
+                            baseValue: baseRoll,
+                            rank: rankInfo.name,
+                            variants: [],
+                            isSecret: false
+                        };
+                    }
+                    
+                    highestBaseRoll = gameState.highestBaseRoll || (highestFinalRoll ? highestFinalRoll.baseValue : 0); // Safety check added
+
+                    maxInventory = gameState.maxInventory || 10;
+                    
+                    inventory = (gameState.inventory || []).map(item => {
+                        // Handle variant conversion for older saves
+                        if (item.variant && !item.variants) {
+                            item.variants = [item.variant];
+                            delete item.variant;
+                        } else if (!item.variants) {
+                            item.variants = [];
+                        }
+                        // Ensure isSecret property exists for older saves
+                         if (typeof item.isSecret === 'undefined') {
+                            item.isSecret = SECRET_RANKS_CHANCES.map(r => r.name).includes(item.rank);
+                        }
+                        return item;
+                    });
+
+                    rollIndex = gameState.rollIndex || 1;
+                    acceptedRolls = new Set(gameState.acceptedRolls || []);
+                    discoveredRanks = new Set(gameState.discoveredRanks || []);
+                    bulkRollLevel = gameState.bulkRollLevel || 0;
+                    bulkRollCost = gameState.bulkRollCost || 500000;
+                    
+                    // NEW: Load Cutscene State 
+                    cutscenesEnabled = typeof gameState.cutscenesEnabled === 'boolean' ? gameState.cutscenesEnabled : true; 
+
+                    // FIX: Load Event State 
+                    currentEvent = gameState.currentEvent || null;
+                    eventEndTime = gameState.eventEndTime || 0;
+                    eventCheckChance = gameState.eventCheckChance || 1;
+
+                    // NEW: Load Shapes Data
+                    geometrix = gameState.geometrix || 0;
+                    shapesUnlocked = gameState.shapesUnlocked || false;
+                    shapeLuckLevel = gameState.shapeLuckLevel || 0;
+                    shapeLuckCost = gameState.shapeLuckCost || 5;
+                    luckMultiLevel = gameState.luckMultiLevel || 0;
+                    luckMultiCost = gameState.luckMultiCost || 100;
+                    bulkShapeLevel = gameState.bulkShapeLevel || 0;
+                    bulkShapeCost = gameState.bulkShapeCost || 50;
+                    
+                    // NEW: Load Active Shapes
+                    activeShapes = gameState.activeShapes || [];
+
+
+                    // Call the calculation function
+                    updateCalculatedStats();
+                    
+                    // Start the shape spawner if it was unlocked
+                    if (shapesUnlocked) {
+                        // FIX: Re-render shapes and start/resume despawn timers on load
+                        renderActiveShapes();
+                        startShapeInterval();
+                    }
+                    
+                    // FIX: Check and resume active event 
+                    if (currentEvent && eventEndTime > Date.now()) {
+                        const durationRemaining = eventEndTime - Date.now();
+                        resumeEvent(currentEvent, durationRemaining);
+                    } else if (currentEvent && eventEndTime <= Date.now()) {
+                        // Event ended while offline - clean up
+                        endEvent({ name: currentEvent.name, eventChanceBoost: currentEvent.eventChanceBoost });
+                    }
+                    
+                    updateStats();
+                    updateInventoryDisplay();
+                    updateIndexDisplay();
+                    addToTerminal('Game loaded!', true);
+                } catch (e) {
+                    console.error('Error loading game:', e);
+                    // Fallback to default state if save is corrupt
+                    updateCalculatedStats();
+                    updateStats();
+                    updateInventoryDisplay();
+                    updateIndexDisplay();
+                }
+            } else {
+                 // First time load
+                updateCalculatedStats();
+                updateStats();
+                updateInventoryDisplay();
+                updateIndexDisplay();
+            }
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'r' && e.target.tagName !== 'INPUT') {
+                e.preventDefault();
+                roll();
+            }
+        });
+        
+        // Add listeners for auto-roll settings
+        document.getElementById('autoStopThreshold').addEventListener('change', (e) => {
+            autoStopThreshold = parseFloat(e.target.value) || 0;
+        });
+        document.getElementById('secretConfig').addEventListener('change', (e) => {
+            secretConfig = e.target.checked;
+        });
+
+        const welcomeLine = document.createElement('div');
+        welcomeLine.className = 'output-line welcome-message';
+        welcomeLine.textContent = 'Welcome to calis RNG game!';
+        document.getElementById('terminal').appendChild(welcomeLine);
+        addToTerminal('Click rolls to add them to your inventory!');
+        
+        loadGame();
+        updateInventoryDisplay(); updateIndexDisplay();
+        startEventLoop(); 
+    </script>
+    
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker registration failed: ', error);
+                    });
+            });
+        }
+    </script>
+    </body>
+</html>
