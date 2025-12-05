@@ -730,7 +730,7 @@
             { 
                 name: "Hidden", 
                 chance: 1/1000, 
-                duration: 5000,
+                duration: 15000,
                 description: "makes EVERY secret X7.77 easier",
                 targets: ["ALL_SECRETS"],
                 multiplier: 7.77
@@ -741,6 +741,7 @@
         const VARIANTS = [
             { name: "Shiny", chance: 1/100, multiplier: 25, color: "#FFD700" },
             { name: "Gilded", chance: 1/125, multiplier: 125, color: "#FFA500" },
+            { name: "Crystalized", chance: 1/500, multiplier: 250, color: "#e642f5" },
             { name: "Spectral", chance: 1/625, multiplier: 625, color: "#9400D3" },
             { name: "Extraordinary", chance: 1/1250, multiplier: 1250, color: "#FF1493" },
             { name: "Myriad", chance: 1/2500, multiplier: 2500, color: "#00FFFF" },
@@ -791,7 +792,7 @@
 
         // UPDATED SECRET RANKS WITH NEW ADDITIONS
         const SECRET_RANKS_CHANCES = [
-            { name: "nil", chance: 1/15000, rarity: 15000 }, 
+            { name: "nil", chance: 1/17500, rarity: 17500 }, 
             { name: "Title Label Missing", chance: 1/4040.404, rarity: 4040.404 },
             { name: "?!? unknown ?!?", chance: 1/6666.666, rarity: 6666.666 },
             { name: "r", chance: 1/6942, rarity: 6942 },
