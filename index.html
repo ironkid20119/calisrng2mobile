@@ -202,21 +202,19 @@
 
         /* ADDED: Unobtainable rank style */
         .rank-unobtainable {
-            background: linear-gradient(90deg, #000000, #ffffff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-shadow: 
-                1px 1px 0 #808080,
-                -1px -1px 0 #808080,
-                1px -1px 0 #808080,
-                -1px 1px 0 #808080,
-                0 1px 0 #808080,
-                1px 0 0 #808080,
-                0 -1px 0 #808080,
-                -1px 0 0 #808080;
-            font-weight: bold;
-        }
+    background: linear-gradient(90deg, #000000, #ffffff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    /* Gray outline - cleaner version */
+    text-shadow: 
+        1px 1px 2px #808080,
+        -1px -1px 2px #808080,
+        1px -1px 2px #808080,
+        -1px 1px 2px #808080,
+        0 0 4px #808080;
+    font-weight: bold;
+}
 
         .secret-nonavacious {
             filter: drop-shadow(0 0 5px #00BFFF); 
