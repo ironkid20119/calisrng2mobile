@@ -1431,7 +1431,7 @@
             const diff = Math.abs(value - rounded);
             
             // If difference is extremely small but not zero (floating point precision issue)
-            if (diff < 1e-10 && diff > 0) {
+            if (diff < 1e-6 && diff > 0) {
                 return true;
             }
             
