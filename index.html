@@ -643,6 +643,8 @@
         <div class="stat-item">Hardcore Mode: <span id="hardcoreStatus">OFF</span></div>
         <!-- NEW: Scientific Notation Status -->
         <div class="stat-item">Scientific Notation: <span id="sciNotationStat">ON (≥1e18)</span></div>
+        <!-- NEW: UTC-3 Time Display -->
+        <div class="stat-item">UTC-3 Time: <span id="utc3TimeDisplay">Not synced</span></div>
     </div>
 
     <!-- NEW: Scientific Notation Settings -->
@@ -752,6 +754,8 @@
         <button id="secretToggleBtn" onclick="toggleSecrets()">Secrets: ON</button>
         <!-- NEW: Hardcore mode toggle -->
         <button id="hardcoreToggleBtn" onclick="toggleHardcoreMode()">Hardcore Mode: OFF</button>
+        <!-- NEW: UTC-3 Time Sync Button -->
+        <button onclick="syncToUTC3()">Sync to UTC-3</button>
     </div>
     
     <div class="main-container">
@@ -1221,6 +1225,9 @@
         let shapeLuckBonus = 0;
         let currentShapeCooldown = SHAPE_SPAWN_INTERVAL_MS;
 
+        // --- NEW: UTC-3 Time tracking ---
+        let utc3TimeDisplayInterval = null;
+
         // --- UTILITY FUNCTIONS ---
         function formatInteger(num) {
             return num.toLocaleString('en-US');
@@ -1258,6 +1265,55 @@
         function escapeHTML(str) {
             if (!str) return '';
             return str.replace(/'/g, "\\'");
+        }
+
+        // --- NEW: UTC-3 Time Sync Function ---
+        function syncToUTC3() {
+            const now = new Date();
+            const utc3OffsetMs = -3 * 60 * 60 * 1000; // UTC-3 is 3 hours behind UTC
+            const utc3Time = new Date(now.getTime() + utc3OffsetMs);
+            
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const dayOfWeek = days[utc3Time.getUTCDay()];
+            
+            const timeString = utc3Time.toUTCString().replace('GMT', 'UTC-3');
+            
+            document.getElementById('utc3TimeDisplay').textContent = `${dayOfWeek}, ${timeString}`;
+            
+            addToTerminal(`✅ Synced to UTC-3 time: ${dayOfWeek}, ${timeString}`, true);
+            
+            // Start auto-updating the display every second
+            if (utc3TimeDisplayInterval) {
+                clearInterval(utc3TimeDisplayInterval);
+            }
+            
+            utc3TimeDisplayInterval = setInterval(updateUTC3Display, 1000);
+            
+            // Check breaktime availability
+            const hour = utc3Time.getUTCHours();
+            const minute = utc3Time.getUTCMinutes();
+            const isWeekday = utc3Time.getUTCDay() >= 1 && utc3Time.getUTCDay() <= 5;
+            
+            if (isWeekday) {
+                addToTerminal('⚠️ Breaktime rank is NOT available (Weekday in UTC-3). Available only on weekends.', true, 'rank-1000-10000');
+            } else {
+                addToTerminal('✅ Breaktime rank IS available (Weekend in UTC-3)!', true, 'rank-1000000-100000000');
+            }
+            
+            saveGame();
+        }
+
+        // --- NEW: Update UTC-3 Display ---
+        function updateUTC3Display() {
+            const now = new Date();
+            const utc3OffsetMs = -3 * 60 * 60 * 1000;
+            const utc3Time = new Date(now.getTime() + utc3OffsetMs);
+            
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const dayOfWeek = days[utc3Time.getUTCDay()];
+            const timeString = utc3Time.toUTCString().replace('GMT', 'UTC-3');
+            
+            document.getElementById('utc3TimeDisplay').textContent = `${dayOfWeek}, ${timeString}`;
         }
 
         // --- NEW: Scientific notation functions ---
