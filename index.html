@@ -1660,16 +1660,47 @@
             });
         }
 
-        // --- MODIFIED: Sort inventory functions to use BASE value ---
+        // --- NEW: Calculate total rarity for an inventory item ---
+        function calculateTotalRarity(item) {
+            let totalRarity = 0;
+            
+            // Get rank rarity
+            const rankName = item.rank.replace(" [HC]", "");
+            
+            // Check if it's a secret rank
+            const secretRank = SECRET_RANKS_CHANCES.find(r => r.name === rankName);
+            if (secretRank) {
+                totalRarity += secretRank.rarity || 1;
+            } else {
+                // For normal ranks, assign rarity based on base value
+                // Higher base value = higher rarity
+                totalRarity += item.baseValue || item.value;
+            }
+            
+            // Add variant rarities
+            if (item.variants && item.variants.length > 0) {
+                item.variants.forEach(variant => {
+                    // Find variant in VARIANTS array
+                    const variantData = VARIANTS.find(v => v.name === variant.name);
+                    if (variantData) {
+                        totalRarity += 1 / variantData.chance;
+                    }
+                });
+            }
+            
+            return totalRarity;
+        }
+
+        // --- MODIFIED: Sort inventory functions to use TOTAL RARITY ---
         function sortInventory(type) {
             if (type === 'leastRarest') {
-                inventory.sort((a, b) => (a.baseValue || a.value) - (b.baseValue || b.value));
+                inventory.sort((a, b) => calculateTotalRarity(a) - calculateTotalRarity(b));
             } else if (type === 'mostRarest') {
-                inventory.sort((a, b) => (b.baseValue || b.value) - (a.baseValue || a.value));
+                inventory.sort((a, b) => calculateTotalRarity(b) - calculateTotalRarity(a));
             }
             updateInventoryDisplay();
             preserveAnimations(); // Preserve animations after sorting
-            addToTerminal(`Inventory sorted by ${type === 'mostRarest' ? 'most rarest (Base Value)' : 'least rarest (Base Value)'}.`, true);
+            addToTerminal(`Inventory sorted by ${type === 'mostRarest' ? 'most rarest (Total Rarity)' : 'least rarest (Total Rarity)'}.`, true);
             saveGame();
         }
 
