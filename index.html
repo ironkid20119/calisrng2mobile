@@ -1817,12 +1817,8 @@
             
             let hiddenEventMultiplier = hardcoreMode ? 1 : (currentEvent && currentEvent.targets.includes("ALL_SECRETS") ? currentEvent.multiplier : 1);
             
-            // Filter out destroyed and corrupted in HC mode
-            const availableSecrets = hardcoreMode ? 
-                SECRET_RANKS_CHANCES.filter(secret => 
-                    secret.name !== "Destroyed" && secret.name !== "CORRUPTED"
-                ) : 
-                SECRET_RANKS_CHANCES;
+            // All ranks are rollable in HC mode
+            const availableSecrets = SECRET_RANKS_CHANCES;
             
             for (const secret of availableSecrets) {
                 let chanceMultiplier = 1;
@@ -2044,7 +2040,17 @@
             document.getElementById('inventoryMax').textContent = maxInventory;
             document.getElementById('pendingCount').textContent = pendingRolls.length;
             document.getElementById('pendingMax').textContent = maxPendingRolls;
-            document.getElementById('ranksDiscovered').textContent = discoveredRanks.size;
+            
+            // Count only ranks discovered and visible in index (not "???"), excluding dev exclusives
+            let visibleDiscoveredCount = 0;
+            for (const rankName of discoveredRanks) {
+                // Skip dev exclusive ranks
+                if (rankName.includes("DEV EXCLUSIVE")) {
+                    continue;
+                }
+                visibleDiscoveredCount++;
+            }
+            document.getElementById('ranksDiscovered').textContent = visibleDiscoveredCount;
             document.getElementById('totalRanks').textContent = TOTAL_RANKS;
             document.getElementById('secretsEnabled').textContent = secretsEnabled ? 'Yes' : 'No';
             document.getElementById('hardcoreStatus').textContent = hardcoreMode ? 'ON' : 'OFF';
@@ -2304,11 +2310,11 @@
         function updateIndexDisplay() {
             const indexContent = document.getElementById('indexContent');
             
-            // Sort normal ranks by min value (highest first)
-            const sortedNormalRanks = [...RANK_TIERS].sort((a, b) => b.min - a.min);
+            // Sort normal ranks by min value (lowest first)
+            const sortedNormalRanks = [...RANK_TIERS].sort((a, b) => a.min - b.min);
             
-            // Sort secret ranks by chance (rarity) - highest rarity first
-            const sortedSecretRanks = [...SECRET_RANKS_CHANCES].sort((a, b) => b.chance - a.chance);
+            // Sort secret ranks by chance (rarity) - lowest rarity first
+            const sortedSecretRanks = [...SECRET_RANKS_CHANCES].sort((a, b) => a.chance - b.chance);
             
             let html = '<div style="margin-bottom: 15px;"><strong>Normal Ranks:</strong></div>';
             
@@ -2702,10 +2708,7 @@
                         isMaxRollSecret = isSecret;
                     }
                     
-                    const baseRankName = displayName.replace(" [HC]", "");
-                    if (!discoveredRanks.has(baseRankName)) {
-                        newRankDiscoveredInBulk = true;
-                    }
+                    // Complex ranks do NOT contribute to discovered
                     
                     continue;
                 }
