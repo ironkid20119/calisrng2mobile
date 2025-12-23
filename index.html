@@ -3095,7 +3095,7 @@
             for (const rollData of rollResults) {
                 let { baseValue, displayValue, complexValue, variants, displayName, isSecret, secretRarityMultiplier, rankInfo, isComplex, complexData } = rollData;
                 
-                const currencyGain = (Math.pow(rankInfo.rankNum / 75, 0.75)) / 1.5;
+                const currencyGain = (Math.pow(baseValue / 75, 0.75)) / 1.5;
                 
                 const { className: rankClassBase, color: rollColorBase } = getRankClassAndColor(
                     typeof displayValue === 'object' ? Math.sqrt(displayValue.real**2 + displayValue.imag**2) : displayValue, 
