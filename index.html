@@ -2714,48 +2714,64 @@
         function generateBooster() {
             const rand = Math.random();
             const luck = BOOSTER_BASE_LUCK * BOOSTER_LUCK_FORMULA(rand);
-            const cost = BOOSTER_COST_FORMULA(luck);
+            let cost = BOOSTER_COST_FORMULA(luck);
             const shape = BOOSTER_SHAPES[Math.floor(Math.random() * BOOSTER_SHAPES.length)];
             const color = BOOSTER_COLORS[Math.floor(Math.random() * BOOSTER_COLORS.length)];
             
-            return { luck, cost, shape, color };
+            // Variant generation: 1/(variant_chance/2.5)
+            let variant = null;
+            for (const v of VARIANTS) {
+                // Check if this variant triggers: 1/(v.chance/2.5) = 2.5/v.chance
+                const variantChance = (2.5 * v.chance); // This is the probability
+                if (Math.random() < variantChance) {
+                    variant = { name: v.name, multiplier: v.multiplier, color: v.color };
+                    // Apply cost multiplier: cost * (variant_multiplier)^1.25
+                    cost *= Math.pow(v.multiplier, 1.25);
+                    break;
+                }
+            }
+            
+            return { luck, cost, shape, color, variant };
         }
         
-        function generateShapeHTML(shape, color, luck) {
+        function generateShapeHTML(shape, color, luck, variantName) {
             const size = 60;
             const centerLuck = luck.toFixed(2);
             
+            let svg = '';
             if (shape === 'circle') {
-                return `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
+                svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
                     <circle cx="30" cy="30" r="25" fill="${color}" stroke="#FFD700" stroke-width="2"/>
                     <text x="30" y="35" text-anchor="middle" fill="white" font-size="14" font-weight="bold">${centerLuck}</text>
                 </svg>`;
             } else if (shape === 'triangle') {
-                return `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
+                svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
                     <polygon points="30,10 50,45 10,45" fill="${color}" stroke="#FFD700" stroke-width="2"/>
                     <text x="30" y="37" text-anchor="middle" fill="white" font-size="14" font-weight="bold">${centerLuck}</text>
                 </svg>`;
             } else if (shape === 'square') {
-                return `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
+                svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
                     <rect x="12" y="12" width="36" height="36" fill="${color}" stroke="#FFD700" stroke-width="2"/>
                     <text x="30" y="35" text-anchor="middle" fill="white" font-size="14" font-weight="bold">${centerLuck}</text>
                 </svg>`;
             } else if (shape === 'pentagon') {
-                return `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
+                svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
                     <polygon points="30,8 52,22 43,44 17,44 8,22" fill="${color}" stroke="#FFD700" stroke-width="2"/>
                     <text x="30" y="35" text-anchor="middle" fill="white" font-size="14" font-weight="bold">${centerLuck}</text>
                 </svg>`;
             } else if (shape === 'hexagon') {
-                return `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
+                svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
                     <polygon points="30,8 52,18 52,40 30,50 8,40 8,18" fill="${color}" stroke="#FFD700" stroke-width="2"/>
                     <text x="30" y="35" text-anchor="middle" fill="white" font-size="14" font-weight="bold">${centerLuck}</text>
                 </svg>`;
             } else if (shape === 'heptagon') {
-                return `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
+                svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
                     <polygon points="30,6 50,14 55,34 43,50 17,50 5,34 10,14" fill="${color}" stroke="#FFD700" stroke-width="2"/>
                     <text x="30" y="35" text-anchor="middle" fill="white" font-size="14" font-weight="bold">${centerLuck}</text>
                 </svg>`;
             }
+            
+            return svg + (variantName ? `<div style="font-size: 11px; color: ${variantName.color || '#FFD700'}; margin-top: 3px; font-weight: bold;">${variantName.name}</div>` : '');
         }
         
         function openBoosterShop() {
@@ -2771,9 +2787,9 @@
         function updateShopDisplay() {
             const shopContent = document.getElementById('shop-content');
             shopContent.innerHTML = shopBoosters.map((b, idx) => `
-                <div style="display: inline-block; text-align: center; margin: 10px; cursor: pointer;" onclick="buyBoosterFromShop(${idx})">
-                    <div style="margin-bottom: 5px; font-size: 12px; color: #FFD700;">Cost: ${formatNumber(b.cost)}</div>
-                    ${generateShapeHTML(b.shape, b.color, b.luck)}
+                <div style="display: inline-block; text-align: center; margin: 10px; cursor: pointer; padding: 8px; border: 1px solid #FFD700; border-radius: 5px; background-color: #3a0d6e; transition: all 0.2s;" onclick="buyBoosterFromShop(${idx})" onmouseover="this.style.boxShadow='0 0 10px #FFD700';" onmouseout="this.style.boxShadow='none';">
+                    <div style="margin-bottom: 5px; font-size: 12px; color: #FFD700;">Cost: ${formatNumber(b.cost.toFixed(0))}</div>
+                    ${generateShapeHTML(b.shape, b.color, b.luck, b.variant)}
                 </div>
             `).join('');
         }
@@ -2787,7 +2803,7 @@
             currency -= booster.cost;
             boosters.push(booster);
             shopBoosters.splice(idx, 1);
-            addToTerminal(`Booster purchased! x${booster.luck.toFixed(2)} luck`, true);
+            addToTerminal(`Booster purchased! x${booster.luck.toFixed(2)} luck${booster.variant ? ` + ${booster.variant.name}` : ''}`, true);
             updateBoosterDisplay();
             updateShopDisplay();
             updateStats();
@@ -2805,11 +2821,11 @@
         function updateBoosterDisplay() {
             const boosterContent = document.getElementById('boosterContent');
             if (boosters.length === 0) {
-                boosterContent.innerHTML = '<div style="color: #888;">No boosters owned</div>';
+                boosterContent.innerHTML = '<div style="color: #888; padding: 10px;">No boosters owned</div>';
             } else {
                 boosterContent.innerHTML = boosters.map((b, idx) => `
-                    <div style="display: inline-block; text-align: center; margin: 8px; cursor: pointer;" onclick="useBooster(${idx})">
-                        ${generateShapeHTML(b.shape, b.color, b.luck)}
+                    <div style="display: inline-block; text-align: center; margin: 8px; padding: 8px; cursor: pointer; border: 1px solid #FFD700; border-radius: 5px; background-color: #3a0d6e; transition: all 0.2s;" onclick="useBooster(${idx})" onmouseover="this.style.boxShadow='0 0 10px #FFD700';" onmouseout="this.style.boxShadow='none';">
+                        ${generateShapeHTML(b.shape, b.color, b.luck, b.variant)}
                         <div style="font-size: 10px; color: #FFD700; margin-top: 5px;">Click to use</div>
                     </div>
                 `).join('');
@@ -4303,7 +4319,11 @@
                 fortuniumLuckLevel,
                 fortuniumLuckCost,
                 clickerLuckLevel,
-                clickerLuckCost
+                clickerLuckCost,
+                
+                // Booster Save Data
+                boosters,
+                activeBooster
             };
             localStorage.setItem('calisRNGGame', JSON.stringify(gameState));
             
@@ -4420,6 +4440,11 @@
                     fortuniumLuckCost = gameState.fortuniumLuckCost || 125;
                     clickerLuckLevel = gameState.clickerLuckLevel || 0;
                     clickerLuckCost = gameState.clickerLuckCost || 1000;
+                    
+                    // Load Booster Data
+                    boosters = gameState.boosters || [];
+                    activeBooster = gameState.activeBooster || null;
+                    updateBoosterDisplay();
 
                     // Call the calculation function
                     updateCalculatedStats();
