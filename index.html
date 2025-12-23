@@ -2739,36 +2739,93 @@
             const size = 60;
             const centerLuck = luck.toFixed(2);
             
+            // Create darker version of color for gradient
+            const hexToRgb = (hex) => {
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? {
+                    r: parseInt(result[1], 16),
+                    g: parseInt(result[2], 16),
+                    b: parseInt(result[3], 16)
+                } : { r: 255, g: 255, b: 255 };
+            };
+            
+            const darkenColor = (hex, amount = 0.4) => {
+                const rgb = hexToRgb(hex);
+                const r = Math.max(0, Math.floor(rgb.r * (1 - amount)));
+                const g = Math.max(0, Math.floor(rgb.g * (1 - amount)));
+                const b = Math.max(0, Math.floor(rgb.b * (1 - amount)));
+                return `rgb(${r},${g},${b})`;
+            };
+            
+            const darkColor = darkenColor(color);
+            const gradientId = `grad-${Math.random().toString(36).substr(2, 9)}`;
+            
             let svg = '';
             if (shape === 'circle') {
                 svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
-                    <circle cx="30" cy="30" r="25" fill="${color}" stroke="#FFD700" stroke-width="2"/>
-                    <text x="30" y="35" text-anchor="middle" fill="white" font-size="14" font-weight="bold">${centerLuck}</text>
+                    <defs>
+                        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:${darkColor};stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <circle cx="30" cy="30" r="25" fill="url(#${gradientId})" stroke="#FFD700" stroke-width="2"/>
+                    <text x="30" y="35" text-anchor="middle" fill="white" stroke="black" stroke-width="0.5" font-size="14" font-weight="bold">${centerLuck}</text>
                 </svg>`;
             } else if (shape === 'triangle') {
                 svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
-                    <polygon points="30,10 50,45 10,45" fill="${color}" stroke="#FFD700" stroke-width="2"/>
-                    <text x="30" y="37" text-anchor="middle" fill="white" font-size="14" font-weight="bold">${centerLuck}</text>
+                    <defs>
+                        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:${darkColor};stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <polygon points="30,10 50,45 10,45" fill="url(#${gradientId})" stroke="#FFD700" stroke-width="2"/>
+                    <text x="30" y="37" text-anchor="middle" fill="white" stroke="black" stroke-width="0.5" font-size="14" font-weight="bold">${centerLuck}</text>
                 </svg>`;
             } else if (shape === 'square') {
                 svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
-                    <rect x="12" y="12" width="36" height="36" fill="${color}" stroke="#FFD700" stroke-width="2"/>
-                    <text x="30" y="35" text-anchor="middle" fill="white" font-size="14" font-weight="bold">${centerLuck}</text>
+                    <defs>
+                        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:${darkColor};stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <rect x="12" y="12" width="36" height="36" fill="url(#${gradientId})" stroke="#FFD700" stroke-width="2"/>
+                    <text x="30" y="35" text-anchor="middle" fill="white" stroke="black" stroke-width="0.5" font-size="14" font-weight="bold">${centerLuck}</text>
                 </svg>`;
             } else if (shape === 'pentagon') {
                 svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
-                    <polygon points="30,8 52,22 43,44 17,44 8,22" fill="${color}" stroke="#FFD700" stroke-width="2"/>
-                    <text x="30" y="35" text-anchor="middle" fill="white" font-size="14" font-weight="bold">${centerLuck}</text>
+                    <defs>
+                        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:${darkColor};stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <polygon points="30,8 52,22 43,44 17,44 8,22" fill="url(#${gradientId})" stroke="#FFD700" stroke-width="2"/>
+                    <text x="30" y="35" text-anchor="middle" fill="white" stroke="black" stroke-width="0.5" font-size="14" font-weight="bold">${centerLuck}</text>
                 </svg>`;
             } else if (shape === 'hexagon') {
                 svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
-                    <polygon points="30,8 52,18 52,40 30,50 8,40 8,18" fill="${color}" stroke="#FFD700" stroke-width="2"/>
-                    <text x="30" y="35" text-anchor="middle" fill="white" font-size="14" font-weight="bold">${centerLuck}</text>
+                    <defs>
+                        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:${darkColor};stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <polygon points="30,8 52,18 52,40 30,50 8,40 8,18" fill="url(#${gradientId})" stroke="#FFD700" stroke-width="2"/>
+                    <text x="30" y="35" text-anchor="middle" fill="white" stroke="black" stroke-width="0.5" font-size="14" font-weight="bold">${centerLuck}</text>
                 </svg>`;
             } else if (shape === 'heptagon') {
                 svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
-                    <polygon points="30,6 50,14 55,34 43,50 17,50 5,34 10,14" fill="${color}" stroke="#FFD700" stroke-width="2"/>
-                    <text x="30" y="35" text-anchor="middle" fill="white" font-size="14" font-weight="bold">${centerLuck}</text>
+                    <defs>
+                        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:${darkColor};stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <polygon points="30,6 50,14 55,34 43,50 17,50 5,34 10,14" fill="url(#${gradientId})" stroke="#FFD700" stroke-width="2"/>
+                    <text x="30" y="35" text-anchor="middle" fill="white" stroke="black" stroke-width="0.5" font-size="14" font-weight="bold">${centerLuck}</text>
                 </svg>`;
             }
             
