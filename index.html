@@ -1391,6 +1391,7 @@
         let boosters = [];
         let activeBooster = null;
         let shopBoosters = [];
+        let shopAutoRefreshInterval = null;
 
 
         // --- OPTIMIZATION: CALCULATED STATS (set by updateCalculatedStats) ---
@@ -2832,7 +2833,7 @@
             return svg + (variantName ? `<div style="font-size: 11px; color: ${variantName.color || '#FFD700'}; margin-top: 3px; font-weight: bold;">${variantName.name}</div>` : '');
         }
         
-        function openBoosterShop() {
+        function refreshBoosterShop() {
             try {
                 const count = Math.floor(Math.random() * (15 - 5 + 1)) + 5; // 5-15
                 shopBoosters = [];
@@ -2840,16 +2841,51 @@
                     shopBoosters.push(generateBooster());
                 }
                 updateShopDisplay();
+            } catch (e) {
+                console.error('Shop refresh error:', e);
+            }
+        }
+        
+        function openBoosterShop() {
+            try {
+                // Clear existing interval if any
+                if (shopAutoRefreshInterval) {
+                    clearInterval(shopAutoRefreshInterval);
+                }
+                
+                refreshBoosterShop();
                 const shopPanel = document.getElementById('shop-panel');
                 if (shopPanel) {
                     shopPanel.style.display = 'block';
-                    addToTerminal('Shop opened! Browse boosters.', true);
+                    addToTerminal('Shop opened! Boosters refresh every 20 seconds.', true);
+                    
+                    // Start auto-refresh interval (20 seconds = 20000ms)
+                    shopAutoRefreshInterval = setInterval(() => {
+                        refreshBoosterShop();
+                        addToTerminal('Shop refreshed with new boosters!', true);
+                    }, 20000);
                 } else {
                     addToTerminal('Error: Shop panel not found', true);
                 }
             } catch (e) {
                 addToTerminal('Error opening shop: ' + e.message, true);
                 console.error('Shop error:', e);
+            }
+        }
+        
+        function closeBoosterShop() {
+            try {
+                if (shopAutoRefreshInterval) {
+                    clearInterval(shopAutoRefreshInterval);
+                    shopAutoRefreshInterval = null;
+                }
+                const shopPanel = document.getElementById('shop-panel');
+                if (shopPanel) {
+                    shopPanel.style.display = 'none';
+                    addToTerminal('Shop closed.', true);
+                }
+            } catch (e) {
+                console.error('Error closing shop:', e);
             }
         }
         
