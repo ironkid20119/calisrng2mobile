@@ -20,9 +20,9 @@ python3 -m http.server 5000 --bind 0.0.0.0
 Configured for static deployment. The entire project directory is served as-is.
 
 ## Recent Changes
+- December 23, 2025: Fixed booster shop interface - added close button, removed Loading placeholder. Changed Force Roll to custom UI with 3 textboxes (Luck, Variant Luck, Secret Luck) and Roll button. Added toggleForceRollUI() and executeCustomForceRoll() functions for debug panel.
 - December 23, 2025: Added booster shop auto-refresh - boosters change every 20 seconds when shop is open, includes refreshBoosterShop() function and closeBoosterShop() for cleanup
 - December 23, 2025: Updated money gain formula to use actual RNG baseValue: ((baseValue/75)^0.75)/1.5
-- December 23, 2025: Fixed booster shop opening issue - moved shopBoosters to global scope, added error handling with try-catch and DOM verification
 - December 23, 2025: Complete booster inventory system with variant support. Variant boosters have 1/(x/2.5) spawn chance and cost multiplier (variant_multiplier)^1.25. Variant names displayed under booster shapes with color coding. Boosters save/load properly.
 - December 23, 2025: Added booster shop with geometric shapes (circle, triangle, square, pentagon, hexagon, heptagon), luck values displayed in center. Shop displays 5-15 random boosters. Changed money gain formula to ((rank_rng/75)^0.75)/1.5
 - December 23, 2025: Booster system fully functional - click shapes to buy from shop, click owned boosters to activate for next roll

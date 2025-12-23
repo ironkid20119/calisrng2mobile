@@ -818,8 +818,27 @@
             <div class="debug-buttons">
                 <button onclick="resetEventsDebug()" class="debug-button">Event Resetter (fixes bugged events)</button>
                 <button onclick="resetSaveDebug()" class="debug-button danger">Save Resetter (5 confirmations)</button>
-                <button onclick="forceIllegitimateRoll()" class="debug-button">Force Roll (Illegitimate)</button>
+                <button onclick="toggleForceRollUI()" class="debug-button">Force Roll (Custom)</button>
                 <button onclick="closeDebugPanel()" class="debug-button">Close Debug Panel</button>
+            </div>
+            <div id="force-roll-ui" style="display: none; margin-top: 15px; padding: 15px; background-color: #3a0d6e; border: 1px solid #ff0000; border-radius: 5px;">
+                <div style="color: #FFD700; font-weight: bold; margin-bottom: 10px;">Custom Force Roll</div>
+                <div style="margin-bottom: 10px;">
+                    <label style="color: #ffffff;">Luck:</label>
+                    <input type="number" id="forceRollLuck" value="0" style="width: 100%; padding: 5px; background-color: #4a148c; color: #ffffff; border: 1px solid #FFD700;">
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label style="color: #ffffff;">Variant Luck:</label>
+                    <input type="number" id="forceRollVariantLuck" value="0" style="width: 100%; padding: 5px; background-color: #4a148c; color: #ffffff; border: 1px solid #FFD700;">
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label style="color: #ffffff;">Secret Luck:</label>
+                    <input type="number" id="forceRollSecretLuck" value="0" style="width: 100%; padding: 5px; background-color: #4a148c; color: #ffffff; border: 1px solid #FFD700;">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="executeCustomForceRoll()" class="debug-button" style="flex: 1;">Roll</button>
+                    <button onclick="toggleForceRollUI()" class="debug-button" style="flex: 1; background-color: #555;">Cancel</button>
+                </div>
             </div>
         </div>
     </div>
@@ -895,8 +914,11 @@
     
     <!-- NEW: Booster Shop Panel -->
     <div id="shop-panel" style="display: none; background-color: #2d0051; border: 2px solid #FFD700; padding: 20px; border-radius: 5px; margin-top: 10px;">
-        <div class="section-header" style="color: #FFD700;">Booster Shop</div>
-        <div id="shop-content" style="min-height: 100px; background-color: #4a148c; border: 1px solid #FFD700; padding: 10px; border-radius: 3px; text-align: center;">Loading...</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div class="section-header" style="color: #FFD700; margin: 0;">Booster Shop</div>
+            <button onclick="closeBoosterShop()" style="background-color: #8b0000; border-color: #ff0000; padding: 5px 10px; cursor: pointer;">Close</button>
+        </div>
+        <div id="shop-content" style="min-height: 100px; background-color: #4a148c; border: 1px solid #FFD700; padding: 10px; border-radius: 3px; text-align: center;"></div>
         <div style="margin-top: 15px; color: #FFD700; font-size: 12px; text-align: center;">Click shapes to buy • Your Boosters:</div>
         <div id="booster-list" style="min-height: 50px; max-height: 150px; overflow-y: auto; background-color: #4a148c; border: 1px solid #FFD700; padding: 10px; border-radius: 3px; margin-top: 10px;">
             <div id="boosterContent">No boosters owned</div>
@@ -1540,12 +1562,21 @@
             askConfirmation();
         }
 
-        function forceIllegitimateRoll() {
-            if (!confirm("Force an illegitimate roll? This won't give currency or count for discoveries.")) return;
+        function toggleForceRollUI() {
+            const ui = document.getElementById('force-roll-ui');
+            if (ui) {
+                ui.style.display = ui.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        function executeCustomForceRoll() {
+            const luck = parseFloat(document.getElementById('forceRollLuck').value) || 0;
+            const variantLuck = parseFloat(document.getElementById('forceRollVariantLuck').value) || 0;
+            const secretLuck = parseFloat(document.getElementById('forceRollSecretLuck').value) || 0;
             
-            // Generate a roll but mark it as illegitimate
-            const totalLuck = currentLuck * luckMultiValue;
-            const baseRoll = Math.pow(Math.random(), 3 / POWER_EXPONENT) * (1 + totalLuck);
+            // Generate a roll with custom luck values
+            const customLuck = currentLuck + luck + variantLuck + secretLuck;
+            const baseRoll = Math.pow(Math.random(), 3 / POWER_EXPONENT) * (1 + customLuck);
             
             // Get variants
             const variantResult = getVariants(baseRoll);
@@ -1584,16 +1615,16 @@
                 variantText = variants.map(v => `<span style="color: ${v.color}; font-weight: bold;">[${v.name}]</span>`).join('') + ' ';
             }
             
-            // Add illegitimate tag
-            const illegitimateTag = '<span style="color: #ff5555; font-weight: bold;">[ILLEGIT!]</span>';
+            // Add debug tag
+            const debugTag = '<span style="color: #ffaa00; font-weight: bold;">[CUSTOM]</span>';
             
-            const content = `<span class="${rankClass} illegitimate-roll" style="color: ${rollColor};">${formatNumber(displayValue)} [${displayName}] ${illegitimateTag}</span>`;
+            const content = `<span class="${rankClass} illegitimate-roll" style="color: ${rollColor};">${formatNumber(displayValue)} [${displayName}] ${debugTag}</span>`;
             
             addToTerminal(
-                `#${formatInteger(rollIndex++)} (DEBUG): ${variantText}${content} (No currency, no discovery)`
+                `#${formatInteger(rollIndex++)} (CUSTOM): L${luck} VL${variantLuck} SL${secretLuck} | ${variantText}${content} (No currency, no discovery)`
             );
             
-            closeDebugPanel();
+            toggleForceRollUI();
         }
 
         // --- NEW: Scientific notation functions ---
