@@ -1,5 +1,5 @@
 # GAME LINK
-https://ironkid20119.github.io/calisrng2/ OR [Click here to play Cali's RNG 2!](https://ironkid20119.github.io/calisrng2/)
+https://ironkid20119.github.io/calisrng2/ OR [Click here to play calis RNG!](https://ironkid20119.github.io/calisrng2/)
 # hey !!!! important to read this, kinda..
 this is my rng game (obviously..)  
 so what can you DO?
