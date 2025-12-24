@@ -410,12 +410,22 @@
             top: 50%;
             width: 2em;
             height: 2em;
-            background: linear-gradient(135deg, #9b59b6 0%, #3498db 50%, #e74c3c 100%);
-            clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+            background: 
+                linear-gradient(135deg, #9b59b6 0%, #3498db 25%, #e74c3c 50%, #f39c12 75%, #9b59b6 100%);
+            background-size: 200% 200%;
+            -webkit-clip-path: polygon(
+                20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%,
+                40% 20%, 60% 20%, 70% 40%, 75% 60%, 70% 80%, 40% 80%, 25% 60%, 25% 40%
+            );
+            clip-path: polygon(
+                20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%,
+                40% 20%, 60% 20%, 70% 40%, 75% 60%, 70% 80%, 40% 80%, 25% 60%, 25% 40%
+            );
             transform: translate(-50%, -50%);
             z-index: -1;
             opacity: 0.75;
             animation: spin-dodecahedron 3s linear infinite;
+            box-shadow: 0 0 20px rgba(155, 89, 182, 0.6), inset 0 0 15px rgba(52, 152, 219, 0.4);
         }
         
         @keyframes spin-dodecahedron {
@@ -1309,6 +1319,17 @@
         const BOOSTER_LUCK_FORMULA = (rand) => Math.pow(rand, -1.2);
         const BOOSTER_COST_FORMULA = (multi) => Math.pow(multi, 1.75);
 
+        // --- NEW: VARIANT SECRETS ---
+        const VARIANT_SECRETS = [
+            {
+                name: "Sound",
+                needsRank: "Uncommon",
+                needsVariant: "Gilded",
+                chance: 1/299,
+                multipliesRNG: 855000
+            }
+        ];
+
         // --- NEW: DEBUG PASSWORD ---
         const DEBUG_PASSWORD = "gd8!dgi0()";
 
@@ -1575,7 +1596,7 @@
             const secretLuck = parseFloat(document.getElementById('forceRollSecretLuck').value) || 0;
             
             // Generate a roll with custom luck values
-            const customLuck = currentLuck + luck + variantLuck + secretLuck;
+            const customLuck = currentLuck + luck + variantLuck;
             const baseRoll = Math.pow(Math.random(), 3 / POWER_EXPONENT) * (1 + customLuck);
             
             // Get variants
@@ -1583,8 +1604,14 @@
             let displayValue = variantResult ? variantResult.modifiedValue : baseRoll;
             const variants = variantResult ? variantResult.variants : [];
             
-            // Check for secret (but won't count for discovery)
-            const secretResult = secretsEnabled ? getSecretRank() : null;
+            // Check for secret with custom secret luck multiplier
+            let secretResult = null;
+            if (secretsEnabled) {
+                const originalSecretMultiplier = secretLuckMultiplier;
+                secretLuckMultiplier = Math.max(1, secretLuckMultiplier + secretLuck);
+                secretResult = getSecretRank();
+                secretLuckMultiplier = originalSecretMultiplier;
+            }
             let rankInfo = getRankInfo(baseRoll);
             let displayName = secretResult ? secretResult.name : rankInfo.name;
             
@@ -2869,11 +2896,16 @@
                 const count = Math.floor(Math.random() * (15 - 5 + 1)) + 5; // 5-15
                 shopBoosters = [];
                 for (let i = 0; i < count; i++) {
-                    shopBoosters.push(generateBooster());
+                    try {
+                        shopBoosters.push(generateBooster());
+                    } catch (err) {
+                        console.error('Error generating booster:', err);
+                    }
                 }
                 updateShopDisplay();
             } catch (e) {
                 console.error('Shop refresh error:', e);
+                addToTerminal('Error refreshing shop: ' + e.message, true);
             }
         }
         
@@ -2921,13 +2953,31 @@
         }
         
         function updateShopDisplay() {
-            const shopContent = document.getElementById('shop-content');
-            shopContent.innerHTML = shopBoosters.map((b, idx) => `
-                <div style="display: inline-block; text-align: center; margin: 10px; cursor: pointer; padding: 8px; border: 1px solid #FFD700; border-radius: 5px; background-color: #3a0d6e; transition: all 0.2s;" onclick="buyBoosterFromShop(${idx})" onmouseover="this.style.boxShadow='0 0 10px #FFD700';" onmouseout="this.style.boxShadow='none';">
-                    <div style="margin-bottom: 5px; font-size: 12px; color: #FFD700;">Cost: ${formatNumber(b.cost.toFixed(0))}</div>
-                    ${generateShapeHTML(b.shape, b.color, b.luck, b.variant)}
-                </div>
-            `).join('');
+            try {
+                const shopContent = document.getElementById('shop-content');
+                if (!shopContent) {
+                    console.error('Shop content element not found');
+                    return;
+                }
+                
+                if (shopBoosters.length === 0) {
+                    shopContent.innerHTML = '<div style="color: #FFD700; padding: 10px;">Generating boosters...</div>';
+                    return;
+                }
+                
+                shopContent.innerHTML = shopBoosters.map((b, idx) => `
+                    <div style="display: inline-block; text-align: center; margin: 10px; cursor: pointer; padding: 8px; border: 1px solid #FFD700; border-radius: 5px; background-color: #3a0d6e; transition: all 0.2s;" onclick="buyBoosterFromShop(${idx})" onmouseover="this.style.boxShadow='0 0 10px #FFD700';" onmouseout="this.style.boxShadow='none';">
+                        <div style="margin-bottom: 5px; font-size: 12px; color: #FFD700;">Cost: ${formatNumber(b.cost.toFixed(0))}</div>
+                        ${generateShapeHTML(b.shape, b.color, b.luck, b.variant)}
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Error updating shop display:', e);
+                const shopContent = document.getElementById('shop-content');
+                if (shopContent) {
+                    shopContent.innerHTML = '<div style="color: #ff0000;">Error loading shop</div>';
+                }
+            }
         }
         
         function buyBoosterFromShop(idx) {
