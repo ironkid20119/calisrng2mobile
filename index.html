@@ -754,48 +754,46 @@
             position: relative;
             color: #000000;
             font-weight: bold;
-        }
-        
-        .rank-1e21-1e30::before,
-        .rank-1e21-1e30::after {
-            content: attr(data-text);
-            position: absolute;
-            left: 0;
-            top: 0;
-            white-space: nowrap;
-            z-index: -1;
             animation: triple-invert 0.8s ease-in-out infinite alternate;
-        }
-        
-        .rank-1e21-1e30::before {
-            color: #ffffff;
-            animation-delay: 0s;
-            transform: scale(1.1);
-            z-index: -2;
-        }
-        
-        .rank-1e21-1e30::after {
-            color: #000000;
-            animation-delay: 0.4s;
-            transform: scale(1.9);
-            z-index: -3;
         }
         
         @keyframes triple-invert {
             0% {
                 color: #ffffff;
-                transform: scale(1.1);
+                text-shadow: 0 0 10px #ffffff;
             }
             50% {
                 color: #000000;
-                transform: scale(1.5);
+                text-shadow: 0 0 10px #000000;
             }
             100% {
                 color: #ffffff;
-                transform: scale(1.9);
+                text-shadow: 0 0 10px #ffffff;
             }
         }
         /* --- END 1e21-1e30 Rank Style --- */
+
+        /* --- Variant text size styles --- */
+        .variant-GIANT {
+            font-size: 5em !important;
+            display: inline-block;
+            line-height: 1;
+            vertical-align: middle;
+        }
+        
+        .variant-Mega {
+            font-size: 1.5em !important;
+            display: inline-block;
+            line-height: 1;
+            vertical-align: middle;
+        }
+        
+        .variant-Small {
+            font-size: 0.75em !important;
+            display: inline-block;
+            line-height: 1;
+            vertical-align: middle;
+        }
 
         @media (max-width: 1200px) {
             .main-container {
@@ -1084,6 +1082,106 @@
     </div>
 
     <script>
+        // --- GLOBAL RUIN VARIABLE ---
+        window.calisrng2 = {
+            ruin: false,
+            ruinInterval: null,
+            ruinOriginalColors: new Map(),
+            ruinOriginalTexts: new Map()
+        };
+
+        function startRuin() {
+            if (calisrng2.ruinInterval) clearInterval(calisrng2.ruinInterval);
+            
+            // Store original colors and texts
+            document.querySelectorAll('*').forEach(el => {
+                if (el.style) {
+                    calisrng2.ruinOriginalColors.set(el, {
+                        color: el.style.color,
+                        backgroundColor: el.style.backgroundColor
+                    });
+                }
+                if (el.textContent && el.children.length === 0) {
+                    calisrng2.ruinOriginalTexts.set(el, el.textContent);
+                }
+            });
+            
+            calisrng2.ruinInterval = setInterval(() => {
+                // Randomize all colors
+                document.querySelectorAll('*').forEach(el => {
+                    if (el.style) {
+                        el.style.color = '#' + Math.floor(Math.random() * 16777215).toString(16);
+                        el.style.backgroundColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
+                    }
+                });
+                
+                // Change all text to "Lol"
+                document.querySelectorAll('*').forEach(el => {
+                    if (el.children.length === 0 && el.textContent) {
+                        el.textContent = "Lol";
+                        if (el.innerHTML) el.innerHTML = "Lol";
+                    }
+                });
+                
+                // Make everything shake
+                document.querySelectorAll('*').forEach(el => {
+                    el.style.transform = `translate(${Math.random() * 20 - 10}px, ${Math.random() * 20 - 10}px)`;
+                });
+                
+                // Randomize font sizes
+                document.querySelectorAll('*').forEach(el => {
+                    el.style.fontSize = `${Math.random() * 3 + 0.5}em`;
+                });
+            }, 50);
+            
+            addToTerminal("⚠️ RUIN MODE ACTIVATED! Everything is broken!", true, 'rank-1000000-100000000');
+        }
+
+        function stopRuin() {
+            if (calisrng2.ruinInterval) {
+                clearInterval(calisrng2.ruinInterval);
+                calisrng2.ruinInterval = null;
+                
+                // Restore original colors
+                calisrng2.ruinOriginalColors.forEach((colors, el) => {
+                    if (el.style) {
+                        el.style.color = colors.color;
+                        el.style.backgroundColor = colors.backgroundColor;
+                    }
+                });
+                
+                // Restore original texts
+                calisrng2.ruinOriginalTexts.forEach((text, el) => {
+                    if (el.textContent) {
+                        el.textContent = text;
+                        if (el.innerHTML) el.innerHTML = text;
+                    }
+                });
+                
+                // Reset transforms and font sizes
+                document.querySelectorAll('*').forEach(el => {
+                    el.style.transform = '';
+                    el.style.fontSize = '';
+                });
+                
+                addToTerminal("Ruin mode deactivated. Game restored.", true);
+            }
+        }
+
+        Object.defineProperty(window.calisrng2, 'ruin', {
+            set: function(value) {
+                this._ruin = value;
+                if (value) {
+                    startRuin();
+                } else {
+                    stopRuin();
+                }
+            },
+            get: function() {
+                return this._ruin;
+            }
+        });
+
         // --- CONSTANTS ---
         const POWER_EXPONENT = -2.4;
         const AUTO_ROLL_DELAY_MS = 5;
@@ -1514,6 +1612,8 @@
         }
 
         function formatNumber(num) {
+            if (calisrng2.ruin) return "Lol";
+            
             if (num < 0) {
                 return "-" + formatNumber(Math.abs(num));
             }
@@ -1529,6 +1629,8 @@
         }
         
         function formatGeometrix(num) {
+            if (calisrng2.ruin) return "Lol";
+            
             if (sciNotationEnabled && Math.abs(num) >= sciNotationThreshold) {
                 return num.toExponential(2);
             }
@@ -1536,6 +1638,7 @@
         }
         
         function formatCooldown(ms) {
+            if (calisrng2.ruin) return "Lol";
             return (ms / 1000).toFixed(4);
         }
 
@@ -1544,6 +1647,104 @@
             return str.replace(/'/g, "\\'");
         }
 
+        // --- FIXED SHOP FUNCTIONS ---
+        
+        function generateShapeHTML(shape, color, luck, variant) {
+            const size = 60;
+            const centerLuck = luck.toFixed(2);
+            
+            const hexToRgb = (hex) => {
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? {
+                    r: parseInt(result[1], 16),
+                    g: parseInt(result[2], 16),
+                    b: parseInt(result[3], 16)
+                } : { r: 255, g: 255, b: 255 };
+            };
+            
+            const darkenColor = (hex, amount = 0.4) => {
+                const rgb = hexToRgb(hex);
+                const r = Math.max(0, Math.floor(rgb.r * (1 - amount)));
+                const g = Math.max(0, Math.floor(rgb.g * (1 - amount)));
+                const b = Math.max(0, Math.floor(rgb.b * (1 - amount)));
+                return `rgb(${r},${g},${b})`;
+            };
+            
+            const darkColor = darkenColor(color);
+            const gradientId = `grad-${Math.random().toString(36).substr(2, 9)}`;
+            
+            let svg = '';
+            if (shape === 'circle') {
+                svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
+                    <defs>
+                        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:${darkColor};stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <circle cx="30" cy="30" r="25" fill="url(#${gradientId})" stroke="#FFD700" stroke-width="2"/>
+                    <text x="30" y="35" text-anchor="middle" fill="white" stroke="black" stroke-width="0.5" font-size="14" font-weight="bold">${centerLuck}</text>
+                </svg>`;
+            } else if (shape === 'triangle') {
+                svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
+                    <defs>
+                        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:${darkColor};stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <polygon points="30,10 50,45 10,45" fill="url(#${gradientId})" stroke="#FFD700" stroke-width="2"/>
+                    <text x="30" y="37" text-anchor="middle" fill="white" stroke="black" stroke-width="0.5" font-size="14" font-weight="bold">${centerLuck}</text>
+                </svg>`;
+            } else if (shape === 'square') {
+                svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
+                    <defs>
+                        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:${darkColor};stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <rect x="12" y="12" width="36" height="36" fill="url(#${gradientId})" stroke="#FFD700" stroke-width="2"/>
+                    <text x="30" y="35" text-anchor="middle" fill="white" stroke="black" stroke-width="0.5" font-size="14" font-weight="bold">${centerLuck}</text>
+                </svg>`;
+            } else if (shape === 'pentagon') {
+                svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
+                    <defs>
+                        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:${darkColor};stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <polygon points="30,8 52,22 43,44 17,44 8,22" fill="url(#${gradientId})" stroke="#FFD700" stroke-width="2"/>
+                    <text x="30" y="35" text-anchor="middle" fill="white" stroke="black" stroke-width="0.5" font-size="14" font-weight="bold">${centerLuck}</text>
+                </svg>`;
+            } else if (shape === 'hexagon') {
+                svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
+                    <defs>
+                        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:${darkColor};stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <polygon points="30,8 52,18 52,40 30,50 8,40 8,18" fill="url(#${gradientId})" stroke="#FFD700" stroke-width="2"/>
+                    <text x="30" y="35" text-anchor="middle" fill="white" stroke="black" stroke-width="0.5" font-size="14" font-weight="bold">${centerLuck}</text>
+                </svg>`;
+            } else if (shape === 'heptagon') {
+                svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
+                    <defs>
+                        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:${darkColor};stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <polygon points="30,6 50,14 55,34 43,50 17,50 5,34 10,14" fill="url(#${gradientId})" stroke="#FFD700" stroke-width="2"/>
+                    <text x="30" y="35" text-anchor="middle" fill="white" stroke="black" stroke-width="0.5" font-size="14" font-weight="bold">${centerLuck}</text>
+                </svg>`;
+            }
+            
+            return svg + (variant ? `<div style="font-size: 11px; color: ${variant.color || '#FFD700'}; margin-top: 3px; font-weight: bold;">${variant.name}</div>` : '');
+        }
+        
         // --- NEW DEBUG FUNCTIONS ---
         
         function nukeShopData() {
@@ -1652,6 +1853,104 @@
                     fixes.push("Fixed: highestFinalRoll was missing");
                 }
                 
+                // Check all arrays for invalid items
+                if (Array.isArray(gameState.inventory)) {
+                    const validInventory = [];
+                    for (let i = 0; i < gameState.inventory.length; i++) {
+                        const item = gameState.inventory[i];
+                        if (item && typeof item === 'object' && item.value !== undefined && item.rank) {
+                            if (typeof item.value !== 'number' || isNaN(item.value)) {
+                                fixes.push(`Fixed: inventory item ${i} had invalid value`);
+                                item.value = 0;
+                            }
+                            if (!Array.isArray(item.variants)) {
+                                item.variants = [];
+                            }
+                            validInventory.push(item);
+                        } else {
+                            fixes.push(`Removed invalid inventory item ${i}`);
+                        }
+                    }
+                    gameState.inventory = validInventory;
+                }
+                
+                // Check pending rolls
+                if (Array.isArray(gameState.pendingRolls)) {
+                    const validPending = [];
+                    for (let i = 0; i < gameState.pendingRolls.length; i++) {
+                        const item = gameState.pendingRolls[i];
+                        if (item && typeof item === 'object' && item.value !== undefined && item.rank) {
+                            if (typeof item.value !== 'number' || isNaN(item.value)) {
+                                fixes.push(`Fixed: pending roll ${i} had invalid value`);
+                                item.value = 0;
+                            }
+                            if (!Array.isArray(item.variants)) {
+                                item.variants = [];
+                            }
+                            validPending.push(item);
+                        } else {
+                            fixes.push(`Removed invalid pending roll ${i}`);
+                        }
+                    }
+                    gameState.pendingRolls = validPending;
+                }
+                
+                // Check boosters
+                if (Array.isArray(gameState.boosters)) {
+                    const validBoosters = [];
+                    for (let i = 0; i < gameState.boosters.length; i++) {
+                        const booster = gameState.boosters[i];
+                        if (booster && typeof booster === 'object' && booster.luck !== undefined) {
+                            if (typeof booster.luck !== 'number' || isNaN(booster.luck)) {
+                                fixes.push(`Fixed: booster ${i} had invalid luck`);
+                                booster.luck = BOOSTER_BASE_LUCK;
+                            }
+                            validBoosters.push(booster);
+                        } else {
+                            fixes.push(`Removed invalid booster ${i}`);
+                        }
+                    }
+                    gameState.boosters = validBoosters;
+                }
+                
+                // Check shop boosters
+                if (Array.isArray(gameState.shopBoosters)) {
+                    const validShopBoosters = [];
+                    for (let i = 0; i < gameState.shopBoosters.length; i++) {
+                        const booster = gameState.shopBoosters[i];
+                        if (booster && typeof booster === 'object' && booster.luck !== undefined) {
+                            if (typeof booster.luck !== 'number' || isNaN(booster.luck)) {
+                                fixes.push(`Fixed: shop booster ${i} had invalid luck`);
+                                booster.luck = BOOSTER_BASE_LUCK;
+                            }
+                            validShopBoosters.push(booster);
+                        } else {
+                            fixes.push(`Removed invalid shop booster ${i}`);
+                        }
+                    }
+                    gameState.shopBoosters = validShopBoosters;
+                }
+                
+                // Check active shapes
+                if (Array.isArray(gameState.activeShapes)) {
+                    const validShapes = [];
+                    for (let i = 0; i < gameState.activeShapes.length; i++) {
+                        const shape = gameState.activeShapes[i];
+                        if (shape && typeof shape === 'object' && shape.name) {
+                            validShapes.push(shape);
+                        } else {
+                            fixes.push(`Removed invalid shape ${i}`);
+                        }
+                    }
+                    gameState.activeShapes = validShapes;
+                }
+                
+                // Ensure maxPendingRolls is calculated correctly
+                if (!gameState.maxPendingRolls || typeof gameState.maxPendingRolls !== 'number') {
+                    gameState.maxPendingRolls = (gameState.maxInventory || 10) * 3;
+                    fixes.push("Fixed: maxPendingRolls was invalid");
+                }
+                
                 localStorage.setItem('calisRNGGame', JSON.stringify(gameState));
                 
                 if (fixes.length > 0) {
@@ -1728,12 +2027,79 @@
                     warnings.push("Geometrix is negative");
                 }
                 
+                // Check inventory items
                 if (Array.isArray(gameState.inventory)) {
                     gameState.inventory.forEach((item, idx) => {
                         if (!item || typeof item !== 'object') {
                             issues.push(`Inventory item ${idx} is corrupted`);
+                        } else {
+                            if (typeof item.value !== 'number' || isNaN(item.value)) {
+                                issues.push(`Inventory item ${idx} has invalid value`);
+                            }
+                            if (!item.rank || typeof item.rank !== 'string') {
+                                issues.push(`Inventory item ${idx} has invalid rank`);
+                            }
+                            if (!Array.isArray(item.variants)) {
+                                issues.push(`Inventory item ${idx} has invalid variants array`);
+                            }
                         }
                     });
+                }
+                
+                // Check pending rolls
+                if (Array.isArray(gameState.pendingRolls)) {
+                    gameState.pendingRolls.forEach((item, idx) => {
+                        if (!item || typeof item !== 'object') {
+                            issues.push(`Pending roll ${idx} is corrupted`);
+                        } else {
+                            if (typeof item.value !== 'number' || isNaN(item.value)) {
+                                issues.push(`Pending roll ${idx} has invalid value`);
+                            }
+                            if (!item.rank || typeof item.rank !== 'string') {
+                                issues.push(`Pending roll ${idx} has invalid rank`);
+                            }
+                        }
+                    });
+                }
+                
+                // Check boosters
+                if (Array.isArray(gameState.boosters)) {
+                    gameState.boosters.forEach((booster, idx) => {
+                        if (!booster || typeof booster !== 'object') {
+                            issues.push(`Booster ${idx} is corrupted`);
+                        } else {
+                            if (typeof booster.luck !== 'number' || isNaN(booster.luck)) {
+                                issues.push(`Booster ${idx} has invalid luck`);
+                            }
+                        }
+                    });
+                }
+                
+                // Check shop boosters
+                if (Array.isArray(gameState.shopBoosters)) {
+                    gameState.shopBoosters.forEach((booster, idx) => {
+                        if (!booster || typeof booster !== 'object') {
+                            issues.push(`Shop booster ${idx} is corrupted`);
+                        } else {
+                            if (typeof booster.luck !== 'number' || isNaN(booster.luck)) {
+                                issues.push(`Shop booster ${idx} has invalid luck`);
+                            }
+                        }
+                    });
+                }
+                
+                // Check active shapes
+                if (Array.isArray(gameState.activeShapes)) {
+                    gameState.activeShapes.forEach((shape, idx) => {
+                        if (!shape || typeof shape !== 'object') {
+                            issues.push(`Active shape ${idx} is corrupted`);
+                        }
+                    });
+                }
+                
+                // Check discovered variant secrets
+                if (!Array.isArray(gameState.discoveredVariantSecrets)) {
+                    issues.push("discoveredVariantSecrets is not an array");
                 }
                 
                 info.push(`Currency: ${gameState.currency || 0}`);
@@ -1744,6 +2110,11 @@
                 info.push(`Discovered variant secrets: ${gameState.discoveredVariantSecrets ? gameState.discoveredVariantSecrets.length : 0}`);
                 info.push(`Boosters owned: ${gameState.boosters ? gameState.boosters.length : 0}`);
                 info.push(`Shop inventory: ${gameState.shopBoosters ? gameState.shopBoosters.length : 0}`);
+                info.push(`Active shapes: ${gameState.activeShapes ? gameState.activeShapes.length : 0}`);
+                info.push(`Pending rolls: ${gameState.pendingRolls ? gameState.pendingRolls.length : 0}`);
+                info.push(`Hardcore mode: ${gameState.hardcoreMode ? 'ON' : 'OFF'}`);
+                info.push(`Secrets enabled: ${gameState.secretsEnabled !== false ? 'Yes' : 'No'}`);
+                info.push(`Cutscenes enabled: ${gameState.cutscenesEnabled !== false ? 'Yes' : 'No'}`);
                 
                 if (issues.length > 0) {
                     addToTerminal("❌ ISSUES FOUND:", true, 'rank-1000000-100000000');
@@ -1922,7 +2293,14 @@
             
             let variantText = '';
             if (variants.length > 0) {
-                variantText = variants.map(v => `<span style="color: ${v.color}; font-weight: bold;">[${v.name}]</span>`).join('') + ' ';
+                variantText = variants.map(v => {
+                    let variantClass = '';
+                    if (v.name === "GIANT") variantClass = 'variant-GIANT';
+                    else if (v.name === "Mega") variantClass = 'variant-Mega';
+                    else if (v.name === "Small") variantClass = 'variant-Small';
+                    
+                    return `<span class="${variantClass}" style="color: ${v.color}; font-weight: bold;">[${v.name}]</span>`;
+                }).join('') + ' ';
             }
             
             const debugTag = '<span style="color: #ffaa00; font-weight: bold;">[CUSTOM]</span>';
@@ -1958,9 +2336,14 @@
             return null;
         }
 
-        // --- MODIFIED ROLL FUNCTION WITH VARIANT SECRETS ---
+        // --- MODIFIED ROLL FUNCTION WITH ALL FIXES ---
         
         async function roll() {
+            if (calisrng2.ruin) {
+                addToTerminal('Lol Lol Lol', true);
+                return;
+            }
+            
             if (isCutscenePlaying) {
                 addToTerminal('Wait for the cutscene to finish!', true);
                 return;
@@ -2246,7 +2629,17 @@
                 const shouldStopOnTrueRNG = autoStopTrueRNGValue > 0 && baseValue >= autoStopTrueRNGValue;
                 const shouldStopCorrupted = displayName === "CORRUPTED" && (autoStopSecretThresholdValue > 0 || autoStopThreshold > 0);
                 
-                const variantText = variants.map(v => `<span style="color: ${v.color}; font-weight: bold;">[${v.name}]</span>`).join('') + ' ';
+                let variantText = '';
+                if (variants.length > 0) {
+                    variantText = variants.map(v => {
+                        let variantClass = '';
+                        if (v.name === "GIANT") variantClass = 'variant-GIANT';
+                        else if (v.name === "Mega") variantClass = 'variant-Mega';
+                        else if (v.name === "Small") variantClass = 'variant-Small';
+                        
+                        return `<span class="${variantClass}" style="color: ${v.color}; font-weight: bold;">[${v.name}]</span>`;
+                    }).join('') + ' ';
+                }
                 
                 const variantDataAttr = variants.length > 0 ? `data-variants='${JSON.stringify(variants)}'` : '';
                 const baseValueAttr = `data-basevalue='${baseValue}'`;
@@ -2445,6 +2838,8 @@
         // --- MODIFIED SAVE/LOAD FUNCTIONS ---
         
         function saveGame() {
+            if (calisrng2.ruin) return;
+            
             const gameState = {
                 currency,
                 totalUpgrades,
@@ -3375,6 +3770,8 @@
         }
 
         function addToTerminal(text, isCommand = false, className = "") {
+            if (calisrng2.ruin) text = "Lol";
+            
             const terminal = document.getElementById('terminal');
             const line = document.createElement('div');
             line.className = 'output-line';
@@ -3428,7 +3825,14 @@
                     
                     let variantText = '';
                     if (item.variants && item.variants.length > 0) {
-                        variantText = item.variants.map(v => `<span style="color: ${v.color}; font-weight: bold;">[${v.name}]</span>`).join('') + ' ';
+                        variantText = item.variants.map(v => {
+                            let variantClass = '';
+                            if (v.name === "GIANT") variantClass = 'variant-GIANT';
+                            else if (v.name === "Mega") variantClass = 'variant-Mega';
+                            else if (v.name === "Small") variantClass = 'variant-Small';
+                            
+                            return `<span class="${variantClass}" style="color: ${v.color}; font-weight: bold;">[${v.name}]</span>`;
+                        }).join('') + ' ';
                     }
                     let suffix = "";
                     let displayValue = item.value;
@@ -3481,7 +3885,14 @@
                     
                     let variantText = '';
                     if (item.variants && item.variants.length > 0) {
-                        variantText = item.variants.map(v => `<span style="color: ${v.color}; font-weight: bold;">[${v.name}]</span>`).join('') + ' ';
+                        variantText = item.variants.map(v => {
+                            let variantClass = '';
+                            if (v.name === "GIANT") variantClass = 'variant-GIANT';
+                            else if (v.name === "Mega") variantClass = 'variant-Mega';
+                            else if (v.name === "Small") variantClass = 'variant-Small';
+                            
+                            return `<span class="${variantClass}" style="color: ${v.color}; font-weight: bold;">[${v.name}]</span>`;
+                        }).join('') + ' ';
                     }
                     
                     return `<div class="pending-roll-item">
@@ -3554,7 +3965,14 @@
             
             let variantText = '';
             if (item.variants && item.variants.length > 0) {
-                variantText = item.variants.map(v => `[${v.name}]`).join('') + ' ';
+                variantText = item.variants.map(v => {
+                    let variantClass = '';
+                    if (v.name === "GIANT") variantClass = 'variant-GIANT';
+                    else if (v.name === "Mega") variantClass = 'variant-Mega';
+                    else if (v.name === "Small") variantClass = 'variant-Small';
+                    
+                    return `[${v.name}]`;
+                }).join('') + ' ';
             }
             
             let suffix = "";
@@ -3762,102 +4180,6 @@
             }
             
             return { luck, cost, shape, color, variant };
-        }
-        
-        function generateShapeHTML(shape, color, luck, variantName) {
-            const size = 60;
-            const centerLuck = luck.toFixed(2);
-            
-            const hexToRgb = (hex) => {
-                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-                return result ? {
-                    r: parseInt(result[1], 16),
-                    g: parseInt(result[2], 16),
-                    b: parseInt(result[3], 16)
-                } : { r: 255, g: 255, b: 255 };
-            };
-            
-            const darkenColor = (hex, amount = 0.4) => {
-                const rgb = hexToRgb(hex);
-                const r = Math.max(0, Math.floor(rgb.r * (1 - amount)));
-                const g = Math.max(0, Math.floor(rgb.g * (1 - amount)));
-                const b = Math.max(0, Math.floor(rgb.b * (1 - amount)));
-                return `rgb(${r},${g},${b})`;
-            };
-            
-            const darkColor = darkenColor(color);
-            const gradientId = `grad-${Math.random().toString(36).substr(2, 9)}`;
-            
-            let svg = '';
-            if (shape === 'circle') {
-                svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
-                    <defs>
-                        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
-                            <stop offset="100%" style="stop-color:${darkColor};stop-opacity:1" />
-                        </linearGradient>
-                    </defs>
-                    <circle cx="30" cy="30" r="25" fill="url(#${gradientId})" stroke="#FFD700" stroke-width="2"/>
-                    <text x="30" y="35" text-anchor="middle" fill="white" stroke="black" stroke-width="0.5" font-size="14" font-weight="bold">${centerLuck}</text>
-                </svg>`;
-            } else if (shape === 'triangle') {
-                svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
-                    <defs>
-                        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
-                            <stop offset="100%" style="stop-color:${darkColor};stop-opacity:1" />
-                        </linearGradient>
-                    </defs>
-                    <polygon points="30,10 50,45 10,45" fill="url(#${gradientId})" stroke="#FFD700" stroke-width="2"/>
-                    <text x="30" y="37" text-anchor="middle" fill="white" stroke="black" stroke-width="0.5" font-size="14" font-weight="bold">${centerLuck}</text>
-                </svg>`;
-            } else if (shape === 'square') {
-                svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
-                    <defs>
-                        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
-                            <stop offset="100%" style="stop-color:${darkColor};stop-opacity:1" />
-                        </linearGradient>
-                    </defs>
-                    <rect x="12" y="12" width="36" height="36" fill="url(#${gradientId})" stroke="#FFD700" stroke-width="2"/>
-                    <text x="30" y="35" text-anchor="middle" fill="white" stroke="black" stroke-width="0.5" font-size="14" font-weight="bold">${centerLuck}</text>
-                </svg>`;
-            } else if (shape === 'pentagon') {
-                svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
-                    <defs>
-                        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
-                            <stop offset="100%" style="stop-color:${darkColor};stop-opacity:1" />
-                        </linearGradient>
-                    </defs>
-                    <polygon points="30,8 52,22 43,44 17,44 8,22" fill="url(#${gradientId})" stroke="#FFD700" stroke-width="2"/>
-                    <text x="30" y="35" text-anchor="middle" fill="white" stroke="black" stroke-width="0.5" font-size="14" font-weight="bold">${centerLuck}</text>
-                </svg>`;
-            } else if (shape === 'hexagon') {
-                svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
-                    <defs>
-                        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
-                            <stop offset="100%" style="stop-color:${darkColor};stop-opacity:1" />
-                        </linearGradient>
-                    </defs>
-                    <polygon points="30,8 52,18 52,40 30,50 8,40 8,18" fill="url(#${gradientId})" stroke="#FFD700" stroke-width="2"/>
-                    <text x="30" y="35" text-anchor="middle" fill="white" stroke="black" stroke-width="0.5" font-size="14" font-weight="bold">${centerLuck}</text>
-                </svg>`;
-            } else if (shape === 'heptagon') {
-                svg = `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
-                    <defs>
-                        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
-                            <stop offset="100%" style="stop-color:${darkColor};stop-opacity:1" />
-                        </linearGradient>
-                    </defs>
-                    <polygon points="30,6 50,14 55,34 43,50 17,50 5,34 10,14" fill="url(#${gradientId})" stroke="#FFD700" stroke-width="2"/>
-                    <text x="30" y="35" text-anchor="middle" fill="white" stroke="black" stroke-width="0.5" font-size="14" font-weight="bold">${centerLuck}</text>
-                </svg>`;
-            }
-            
-            return svg + (variantName ? `<div style="font-size: 11px; color: ${variantName.color || '#FFD700'}; margin-top: 3px; font-weight: bold;">${variantName.name}</div>` : '');
         }
         
         function refreshBoosterShop() {
@@ -4243,7 +4565,14 @@
 
                 let variantText = '';
                 if (highestFinalRoll.variants && highestFinalRoll.variants.length > 0) {
-                    variantText = highestFinalRoll.variants.map(v => `[${v.name}]`).join('') + ' ';
+                    variantText = highestFinalRoll.variants.map(v => {
+                        let variantClass = '';
+                        if (v.name === "GIANT") variantClass = 'variant-GIANT';
+                        else if (v.name === "Mega") variantClass = 'variant-Mega';
+                        else if (v.name === "Small") variantClass = 'variant-Small';
+                        
+                        return `[${v.name}]`;
+                    }).join('') + ' ';
                 }
                 
                 addToTerminal(
