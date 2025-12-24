@@ -17,7 +17,7 @@ the easiest normal rank is 1/1, and the hardest is..
 - unlock features and progress..
 ## you do NOT need to download index.html, as its ALREADY on github!
 the best part? the game automatically saves, AND you can transfer from devices by exporting and importing data!
-we will KNOW if your save file is edited lol. its easy to tell.
+<we will KNOW if your save file is edited! its super easy to DETECT, and we dont recommend you doing it!>
 ## links:
 DC server link:
 https://discord.gg/RjhFHbkW32
