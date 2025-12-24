@@ -749,6 +749,54 @@
             vertical-align: middle;
         }
 
+        /* --- 1e21-1e30 Rank Style --- */
+        .rank-1e21-1e30 {
+            position: relative;
+            color: #000000;
+            font-weight: bold;
+        }
+        
+        .rank-1e21-1e30::before,
+        .rank-1e21-1e30::after {
+            content: attr(data-text);
+            position: absolute;
+            left: 0;
+            top: 0;
+            white-space: nowrap;
+            z-index: -1;
+            animation: triple-invert 0.8s ease-in-out infinite alternate;
+        }
+        
+        .rank-1e21-1e30::before {
+            color: #ffffff;
+            animation-delay: 0s;
+            transform: scale(1.1);
+            z-index: -2;
+        }
+        
+        .rank-1e21-1e30::after {
+            color: #000000;
+            animation-delay: 0.4s;
+            transform: scale(1.9);
+            z-index: -3;
+        }
+        
+        @keyframes triple-invert {
+            0% {
+                color: #ffffff;
+                transform: scale(1.1);
+            }
+            50% {
+                color: #000000;
+                transform: scale(1.5);
+            }
+            100% {
+                color: #ffffff;
+                transform: scale(1.9);
+            }
+        }
+        /* --- END 1e21-1e30 Rank Style --- */
+
         @media (max-width: 1200px) {
             .main-container {
                 grid-template-columns: 1fr;
@@ -1289,7 +1337,7 @@
             { name: "WHAT THE FUCK", chance: 1/1e50, rarity: 1e50, multiplier: 1e50 }
         ];
 
-        // NEW: Variant Secrets
+        // NEW: Variant Secrets (Only Sound remains)
         const VARIANT_SECRETS = [
             {
                 name: "Sound",
@@ -1298,87 +1346,16 @@
                 chance: 1/299,
                 multipliesRNG: 855000,
                 rarity: 299 * 125
-            },
-            {
-                name: "Echo",
-                needsRank: "Cosmic",
-                needsVariant: "Crystalized",
-                chance: 1/500,
-                multipliesRNG: 2500000,
-                rarity: 500 * 250
-            },
-            {
-                name: "Harmony",
-                needsRank: "Eternal",
-                needsVariant: "Spectral",
-                chance: 1/750,
-                multipliesRNG: 5000000,
-                rarity: 750 * 625
-            },
-            {
-                name: "Resonance",
-                needsRank: "Iridescent",
-                needsVariant: "Extraordinary",
-                chance: 1/1000,
-                multipliesRNG: 10000000,
-                rarity: 1000 * 1250
-            },
-            {
-                name: "Vibration",
-                needsRank: "Exceptional",
-                needsVariant: "Myriad",
-                chance: 1/2500,
-                multipliesRNG: 25000000,
-                rarity: 2500 * 2500
-            },
-            {
-                name: "Frequency",
-                needsRank: "Heavenly",
-                needsVariant: "Charred",
-                chance: 1/5000,
-                multipliesRNG: 50000000,
-                rarity: 5000 * 4000
-            },
-            {
-                name: "Wavelength",
-                needsRank: "Fantasy",
-                needsVariant: "Expert",
-                chance: 1/10000,
-                multipliesRNG: 100000000,
-                rarity: 10000 * 7500
-            },
-            {
-                name: "Amplitude",
-                needsRank: "Unattainable",
-                needsVariant: "Wind",
-                chance: 1/25000,
-                multipliesRNG: 250000000,
-                rarity: 25000 * 12500
-            },
-            {
-                name: "Oscillation",
-                needsRank: "Gigantic",
-                needsVariant: "Mega",
-                chance: 1/50000,
-                multipliesRNG: 500000000,
-                rarity: 50000 * 25000
-            },
-            {
-                name: "Quantum Tone",
-                needsRank: "Theoretical",
-                needsVariant: "Solar",
-                chance: 1/100000,
-                multipliesRNG: 1000000000,
-                rarity: 100000 * 250000
             }
+            // All other variant secrets have been removed as requested
         ];
 
         SECRET_RANKS_CHANCES.sort((a, b) => a.chance - b.chance); 
 
         const EUPHORIA_SYMBOLS = ['%', '@', '#', '^', '$', '*', '&', '>', '<', '?'];
         const TOTAL_RANKS = 102;
-        const TOTAL_VARIANT_SECRETS = VARIANT_SECRETS.length;
-
+        const TOTAL_VARIANT_SECRETS = 1; // Changed to 1 since only Sound remains
+        
         const UNLOCK_SHAPES_COST = 5000000;
         const SHAPE_SPAWN_INTERVAL_MS = 2000;
         const MAX_SHAPE_LUCK_LEVEL = 5;
@@ -1576,14 +1553,28 @@
             activeBooster = null;
             shopBoosters = [];
             
+            // Also reset shop refresh timing
+            shopLastRefresh = 0;
+            
+            // Clear any existing shop auto-refresh interval
             if (shopAutoRefreshInterval) {
                 clearInterval(shopAutoRefreshInterval);
                 shopAutoRefreshInterval = null;
             }
             
-            addToTerminal("💣 Shop data nuked! All boosters and shop inventory cleared.", true, 'rank-1000000-100000000');
+            // Force immediate shop regeneration when opened
+            shopBoosters = [];
+            
+            addToTerminal("💣 Shop data COMPLETELY nuked! All boosters, shop inventory, and shop state reset.", true, 'rank-1000000-100000000');
             updateBoosterDisplay();
-            closeBoosterShop();
+            
+            // Force close shop if open
+            const shopPanel = document.getElementById('shop-panel');
+            if (shopPanel) {
+                shopPanel.style.display = 'none';
+            }
+            
+            // Save the nuked state
             saveGame();
             closeDebugPanel();
         }
@@ -2259,20 +2250,21 @@
                 
                 const variantDataAttr = variants.length > 0 ? `data-variants='${JSON.stringify(variants)}'` : '';
                 const baseValueAttr = `data-basevalue='${baseValue}'`;
+                const dataTextAttr = `data-text='${escapeHTML(displayName)}'`;
                 
                 let content = '';
                 
                 if (isComplex) {
                     const realFormatted = formatNumber(complexData.realPart);
                     const imagFormatted = formatNumber(complexData.imagPart);
-                    content = `<span class="clickable-roll ${rankClass}" style="color: ${rollColor};" onclick="tryAddToInventory(${displayValue}, '${escapeHTML(displayName)}', ${currentIndex}, this)" id="roll-${currentIndex}" ${variantDataAttr} ${baseValueAttr}>${realFormatted} + ${imagFormatted}i [${displayName}]${secretMultiplierText}${suffix}</span>`;
+                    content = `<span class="clickable-roll ${rankClass}" style="color: ${rollColor};" onclick="tryAddToInventory(${displayValue}, '${escapeHTML(displayName)}', ${currentIndex}, this)" id="roll-${currentIndex}" ${variantDataAttr} ${baseValueAttr} ${dataTextAttr}>${realFormatted} + ${imagFormatted}i [${displayName}]${secretMultiplierText}${suffix}</span>`;
                 } else {
                     let variantSecretBadge = '';
                     if (variantSecret) {
                         variantSecretBadge = ` <span class="variant-secret-badge" title="${variantSecret.needsRank} + ${variantSecret.needsVariant}">${variantSecret.name}</span>`;
                     }
                     
-                    content = `<span class="clickable-roll ${rankClass}" style="color: ${rollColor};" onclick="tryAddToInventory(${displayValue}, '${escapeHTML(displayName)}', ${currentIndex}, this)" id="roll-${currentIndex}" ${variantDataAttr} ${baseValueAttr}>${formatNumber(finalDisplayValue)} [${displayName}]${secretMultiplierText}${suffix}${variantSecretBadge}</span>`;
+                    content = `<span class="clickable-roll ${rankClass}" style="color: ${rollColor};" onclick="tryAddToInventory(${displayValue}, '${escapeHTML(displayName)}', ${currentIndex}, this)" id="roll-${currentIndex}" ${variantDataAttr} ${baseValueAttr} ${dataTextAttr}>${formatNumber(finalDisplayValue)} [${displayName}]${secretMultiplierText}${suffix}${variantSecretBadge}</span>`;
                 }
                 
                 if (displayName === "⛧Satanic⛧") {
@@ -3359,6 +3351,7 @@
                 color = "#ffffff";
             }
             else if (value >= 1e30) { className = "rank-improbable"; color = "#008080"; }
+            else if (value >= 1e21) { className = "rank-1e21-1e30"; color = "#000000"; }
             else if (value >= 1e15) { className = "rank-rainbow"; color = "#ff7f00"; }
             else if (value >= 1e12) { className = "rank-1000000000000-100000000000000"; color = "#ff69b4"; }
             else if (value >= 1e11) { className = "rank-100000000000-1000000000000"; color = "#a9a9a9"; } 
@@ -3451,7 +3444,7 @@
                         displayValue = 1e10;
                     }
                     
-                    let content = `<span class="${displayClass}" style="color: ${rollColor};">${formatNumber(displayValue)} [${item.rank}]${suffix}</span>`;
+                    let content = `<span class="${displayClass}" style="color: ${rollColor};" data-text="${escapeHTML(item.rank)}">${formatNumber(displayValue)} [${item.rank}]${suffix}</span>`;
                     if (item.rank === "⛧Satanic⛧") {
                         content = `<span class="satanic-wrapper">${content}</span>`;
                     }
@@ -3493,7 +3486,7 @@
                     
                     return `<div class="pending-roll-item">
                         <div>
-                            #${formatInteger(item.index)}: ${variantText}<span class="${displayClass}" style="color: ${rollColor};">${formatNumber(item.value)} [${item.rank}]</span>
+                            #${formatInteger(item.index)}: ${variantText}<span class="${displayClass}" style="color: ${rollColor};" data-text="${escapeHTML(item.rank)}">${formatNumber(item.value)} [${item.rank}]</span>
                         </div>
                         <div class="pending-roll-buttons">
                             <button class="pending-accept-btn" onclick="acceptPendingRoll(${idx})">Accept</button>
@@ -4254,7 +4247,7 @@
                 }
                 
                 addToTerminal(
-                    `Rarest roll: ${variantText}<span class="satanic-wrapper"><span class="${rankClass}" style="color: ${rollColor};">${formatNumber(displayValue)} [${displayName}]${suffix}</span></span>`,
+                    `Rarest roll: ${variantText}<span class="satanic-wrapper"><span class="${rankClass}" style="color: ${rollColor};" data-text="${escapeHTML(displayName)}">${formatNumber(displayValue)} [${displayName}]${suffix}</span></span>`,
                     true
                 );
             }
