@@ -1444,15 +1444,17 @@
                 chance: 1/299,
                 multipliesRNG: 855000,
                 rarity: 299 * 125
-            }
-            // All other variant secrets have been removed as requested
+            },
+            { name: "ULTRATRASH", needsRank: "TRASH", needsVariant: "Ultimate", chance: 1/2, multipliesRNG: 1e9, rarity: 1e19 },
+            { name: "F4LS3 R3A1I7Y", needsRank: "Eternal", needsVariant: "Atomic", chance: 1/50, multipliesRNG: 1e15, rarity: 1e15 },
+            { name: "SUPERLARGE", needsRank: "Gigantic", needsVariant: "GIANT", chance: 1/100, mutlipliesRNG: 3.333e19, rarity: 3.333e19 }
         ];
 
         SECRET_RANKS_CHANCES.sort((a, b) => a.chance - b.chance); 
 
         const EUPHORIA_SYMBOLS = ['%', '@', '#', '^', '$', '*', '&', '>', '<', '?'];
         const TOTAL_RANKS = 102;
-        const TOTAL_VARIANT_SECRETS = 1; // Changed to 1 since only Sound remains
+        const TOTAL_VARIANT_SECRETS = 4; 
         
         const UNLOCK_SHAPES_COST = 5000000;
         const SHAPE_SPAWN_INTERVAL_MS = 2000;
