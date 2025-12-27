@@ -433,6 +433,31 @@
             100% { transform: translate(-50%, -50%) rotateX(360deg) rotateY(360deg) rotateZ(360deg); }
         }
         
+        .rank-1e21-1e30 {
+            position: relative;
+        }
+        
+        .rank-1e21-1e30::before {
+            content: attr(data-text);
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: #ffffff;
+            font-weight: bold;
+            z-index: -1;
+            animation: scale-flicker-1e21 2s ease-in-out infinite, color-flicker-1e21 0.8s ease-in-out infinite;
+        }
+        
+        @keyframes scale-flicker-1e21 {
+            0%, 100% { transform: scale(1.1); }
+            50% { transform: scale(1.9); }
+        }
+        
+        @keyframes color-flicker-1e21 {
+            0%, 50% { color: #000000; }
+            51%, 100% { color: #ffffff; }
+        }
+        
         .secret-nonavacious {
             filter: drop-shadow(0 0 5px #00BFFF); 
         }
@@ -1744,7 +1769,7 @@
                 </svg>`;
             }
             
-            return svg + (variant ? `<div style="font-size: 11px; color: ${variant.color || '#FFD700'}; margin-top: 3px; font-weight: bold;">${variant.name}</div>` : '');
+            return svg + (variant ? `<div style="font-size: ${variant.name === 'GIANT' ? '55px' : variant.name === 'mega' ? '27.5px' : variant.name === 'small' ? '8.25px' : '11px'}; color: ${variant.color || '#FFD700'}; margin-top: 3px; font-weight: bold;">${variant.name}</div>` : '');
         }
         
         // --- NEW DEBUG FUNCTIONS ---
@@ -2351,10 +2376,16 @@
                 return;
             }
             
+            let boosterVariant = null;
             if (activeBooster) {
                 const boosterLuck = activeBooster.luck;
                 currentLuck += boosterLuck;
-                addToTerminal(`Booster applied! +${boosterLuck.toFixed(2)} luck`, true);
+                boosterVariant = activeBooster.variant || null;
+                let msg = `Booster applied! +${boosterLuck.toFixed(2)} luck`;
+                if (boosterVariant) {
+                    msg += ` + ${boosterVariant.name}`;
+                }
+                addToTerminal(msg, true);
                 activeBooster = null;
             }
             
@@ -2416,7 +2447,13 @@
                 
                 const variantResult = getVariants(baseValue);
                 let displayValue = variantResult ? variantResult.modifiedValue : baseValue;
-                const variants = variantResult ? variantResult.variants : [];
+                let variants = variantResult ? variantResult.variants : [];
+                
+                // Apply booster variant if present
+                if (boosterVariant && !variants.some(v => v.name === boosterVariant.name)) {
+                    variants.push(boosterVariant);
+                    displayValue *= boosterVariant.multiplier;
+                }
                 
                 // CHECK FOR VARIANT SECRET HERE
                 let variantSecretResult = null;
@@ -3035,10 +3072,17 @@
                     activeBooster = gameState.activeBooster || null;
                     updateBoosterDisplay();
                     
-                    // NEW: Load shop data
-                    shopBoosters = gameState.shopBoosters || [];
-                    const shopLastRefresh = gameState.shopLastRefresh || 0;
-                    if (Date.now() - shopLastRefresh > 20000) {
+                    // NEW: Load shop data with validation
+                    try {
+                        shopBoosters = (gameState.shopBoosters || []).filter(b => 
+                            b && isFinite(b.cost) && b.cost > 0 && b.luck && b.shape
+                        );
+                        const shopLastRefresh = gameState.shopLastRefresh || 0;
+                        if (Date.now() - shopLastRefresh > 20000 || shopBoosters.length === 0) {
+                            shopBoosters = [];
+                        }
+                    } catch (e) {
+                        console.error('Error loading shop boosters:', e);
                         shopBoosters = [];
                     }
                     
@@ -4181,6 +4225,11 @@
                 }
             }
             
+            // Validate cost is finite and positive
+            if (!isFinite(cost) || cost < 0) {
+                cost = 100;
+            }
+            
             return { luck, cost, shape, color, variant };
         }
         
@@ -4274,11 +4323,25 @@
         
         function buyBoosterFromShop(idx) {
             const booster = shopBoosters[idx];
+            if (!booster) {
+                addToTerminal('Error: Booster not found', true);
+                return;
+            }
+            if (!isFinite(booster.cost) || booster.cost < 0) {
+                addToTerminal('Error: Invalid booster cost', true);
+                console.error('Invalid booster cost:', booster.cost);
+                refreshBoosterShop();
+                return;
+            }
             if (currency < booster.cost) {
                 addToTerminal(`Cannot afford booster (cost: ${formatNumber(booster.cost)})`, true);
                 return;
             }
             currency -= booster.cost;
+            if (!isFinite(currency) || currency < 0) {
+                currency = Math.max(0, currency);
+                console.error('Currency became invalid, reset to:', currency);
+            }
             boosters.push(booster);
             shopBoosters.splice(idx, 1);
             addToTerminal(`Booster purchased! x${booster.luck.toFixed(2)} luck${booster.variant ? ` + ${booster.variant.name}` : ''}`, true);
